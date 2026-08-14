@@ -1941,9 +1941,14 @@ async function muatDataCloud(){
       const {data:produkCloud} = await db.from('produk').select('*');
       if(produkCloud && produkCloud.length){
         produkCloud.forEach(p=>{
-          if(!produkData.some(x=>x.id===p.produk_id)){
-            const infoKategori = kategoriData.find(k=>k.id===p.kategori) || kategoriData[0];
-            produkData.push({id:p.produk_id, nama:p.nama, kategori:p.kategori, harga:p.harga, satuan:p.satuan, ikon:p.ikon||infoKategori.ikon, bg:infoKategori.bg, resep:!!p.resep, owa:!!p.owa, kedaluwarsa:p.kedaluwarsa||null, hargaModal:p.harga_modal||0, hargaMember:p.harga_member||0, gambarUrl:p.gambar_url||null, supplierNama:p.supplier_nama||null, perusahaanNama:p.perusahaan_nama||null, tglTerima:p.tgl_terima||null, kemasanLain:p.kemasan_lain?JSON.parse(p.kemasan_lain):{}, konversiSatuan:p.konversi_satuan?JSON.parse(p.konversi_satuan):{}, minQtyGrosir:p.min_qty_grosir||0, bolehEceran:p.boleh_eceran!==false});
+          const infoKategori = kategoriData.find(k=>k.id===p.kategori) || kategoriData[0];
+          const dataCloudProduk = {nama:p.nama, kategori:p.kategori, harga:p.harga, satuan:p.satuan, ikon:p.ikon||infoKategori.ikon, resep:!!p.resep, owa:!!p.owa, kedaluwarsa:p.kedaluwarsa||null, hargaModal:p.harga_modal||0, hargaMember:p.harga_member||0, gambarUrl:p.gambar_url||null, supplierNama:p.supplier_nama||null, perusahaanNama:p.perusahaan_nama||null, tglTerima:p.tgl_terima||null, kemasanLain:p.kemasan_lain?JSON.parse(p.kemasan_lain):{}, konversiSatuan:p.konversi_satuan?JSON.parse(p.konversi_satuan):{}, minQtyGrosir:p.min_qty_grosir||0, bolehEceran:p.boleh_eceran!==false};
+          const sudahAda = produkData.find(x=>x.id===p.produk_id);
+          if(sudahAda){
+            // Produk sudah ada secara lokal (misal produk preset bawaan) — perbarui datanya (termasuk foto) dari cloud, jangan diabaikan
+            Object.assign(sudahAda, dataCloudProduk);
+          } else {
+            produkData.push(Object.assign({id:p.produk_id, bg:infoKategori.bg}, dataCloudProduk));
             if(!penjualanProduk[p.produk_id]) penjualanProduk[p.produk_id]={harian:0, bulanan:0};
           }
         });
@@ -4884,8 +4889,18 @@ async function simpanProfilCVCloud(){
 }
 async function updateKemasanProdukCloud(produkId, kemasanLain, satuan, bolehEceran, harga, kedaluwarsa, hargaMember, minQtyGrosir, gambarUrl){
   if(!db) return;
-  try{ await db.from('produk').update({kemasan_lain: JSON.stringify(kemasanLain), satuan: satuan, boleh_eceran: bolehEceran, harga: harga, kedaluwarsa: kedaluwarsa, harga_member: hargaMember, min_qty_grosir: minQtyGrosir, gambar_url: gambarUrl}).eq('produk_id', produkId); }
-  catch(e){ console.warn('Gagal sinkron kemasan produk', e); }
+  const p = produkData.find(x=>x.id===produkId);
+  try{
+    // upsert (bukan update biasa): produk bawaan/preset yang belum pernah tersimpan di cloud akan otomatis dibuatkan barisnya,
+    // bukan gagal diam-diam seperti sebelumnya (itu sebabnya foto produk lama seperti ini sempat hilang lagi setelah diupload)
+    await db.from('produk').upsert({
+      produk_id:produkId, nama:p?p.nama:'', kategori:p?p.kategori:'', harga:harga, satuan:satuan, ikon:p?p.ikon:null,
+      resep:p?!!p.resep:false, owa:p?!!p.owa:false, kedaluwarsa:kedaluwarsa||null, harga_modal:p?(p.hargaModal||null):null,
+      harga_member:hargaMember, gambar_url:gambarUrl||null, supplier_nama:p?(p.supplierNama||null):null, perusahaan_nama:p?(p.perusahaanNama||null):null,
+      tgl_terima:p?(p.tglTerima||null):null, kemasan_lain: JSON.stringify(kemasanLain||{}), konversi_satuan: p?JSON.stringify(p.konversiSatuan||{}):'{}',
+      min_qty_grosir:minQtyGrosir||null, boleh_eceran: bolehEceran
+    }, {onConflict:'produk_id'});
+  }catch(e){ console.warn('Gagal sinkron kemasan produk', e); }
 }
 function isiKonversiLaluTambah(id, satuanKunci){
   const p = produkData.find(x=>x.id===id);
@@ -6439,7 +6454,14 @@ function cekBPOM(){
     setTimeout(()=>tampilkanToast('Situs BPOM terbuka di tab baru — ketik "'+nama+'" di kolom pencariannya untuk cocokkan nama & komposisi resmi'), 300);
   }
 }
-function idProdukBaru(){ return Math.max(999, ...produkData.map(p=>p.id)) + 1; }
+function idProdukBaru(){
+  // ID dibuat dari waktu + acak, supaya kalau dua HP menambah produk baru di waktu berdekatan (sebelum sempat sinkron),
+  // ID-nya tidak bentrok jadi satu produk sama seperti sebelumnya (Math.max+1 rentan bentrok antar-perangkat)
+  let calon;
+  do { calon = (Date.now() % 1000000000) + Math.floor(Math.random()*1000); }
+  while(produkData.some(p=>p.id===calon));
+  return calon;
+}
 function tambahProdukBaru(){
  const btnSimpan = document.getElementById('btnSimpanProduk');
  if(btnSimpan){ btnSimpan.disabled=true; btnSimpan.textContent='⏳ Menyimpan...'; }
