@@ -2951,11 +2951,13 @@ function checkoutViaWA(){
   const alamatEl=document.getElementById('keranjangAlamat'); if(alamatEl) alamatEl.value='';
   setMetodeAmbil('sendiri');
   keranjang=[]; simpan(); renderKeranjang();
-  window.open('https://wa.me/6281234567890?text='+teks, '_blank');
+  const noWAToko = normalisasiWA(pengaturanApotek.telepon || '6281234567890');
+  window.open('https://wa.me/'+noWAToko+'?text='+teks, '_blank');
   tampilkanToast('Pesanan terkirim, menunggu konfirmasi pembayaran dari apotek', true);
 }
 function bukaWA(){
-  window.open('https://wa.me/6281234567890?text='+encodeURIComponent('Halo Apotek Binhafas, saya ingin bertanya seputar produk/layanan.'), '_blank');
+  const noWAToko = normalisasiWA(pengaturanApotek.telepon || '6281234567890');
+  window.open('https://wa.me/'+noWAToko+'?text='+encodeURIComponent('Halo Apotek Binhafas, saya ingin bertanya seputar produk/layanan.'), '_blank');
 }
 
 /* ===================== AI CHAT ===================== */
