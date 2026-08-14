@@ -4550,10 +4550,14 @@ function cekMemberPos(nomor){
 const LABEL_SATUAN_STANDAR = {pcs:'Pcs', strip:'Blister', botol:'Btl (Botol)', tube:'TB (Tube)', ampul:'Ampul', vial:'Vial', box:'Box', karton:'Karton'};
 const LABEL_SATUAN_JAMAK = {pcs:'Pcs', strip:'Blister', botol:'Botol', tube:'Tube', ampul:'Ampul', vial:'Vial', box:'Box', karton:'Karton'};
 function pecahStokJadiSatuan(p, totalPcs){
-  if(totalPcs<=0) return '0 pcs';
+  // Label satuan dasar mengikuti satuan yang tersimpan di produk (Botol/Tube/Sachet/dll), bukan selalu "Pcs"
+  const kunciDasar = petaSatuanKeKunci(p.satuan);
+  const labelDasar = LABEL_SATUAN_JAMAK[kunciDasar] || (p.satuan || 'Pcs');
+  if(totalPcs<=0) return '0 '+labelDasar;
   // Kumpulkan satuan yang punya info konversi (dari kemasanLain atau konversiSatuan), urutkan dari isi terbesar dulu
   const daftarSatuan = [];
   ['karton','box','tube','botol','ampul','vial','strip'].forEach(k=>{
+    if(k===kunciDasar) return; // satuan dasar produk tidak dihitung sebagai "kemasan lebih besar" dari dirinya sendiri
     const isi = (p.kemasanLain && p.kemasanLain[k] && p.kemasanLain[k].isi) || (p.konversiSatuan && p.konversiSatuan[k]) || 0;
     if(isi>1) daftarSatuan.push({kunci:k, isi});
   });
@@ -4564,7 +4568,7 @@ function pecahStokJadiSatuan(p, totalPcs){
     const jumlah = Math.floor(sisa/s.isi);
     if(jumlah>0){ bagian.push(jumlah+' '+LABEL_SATUAN_JAMAK[s.kunci]); sisa -= jumlah*s.isi; }
   });
-  if(sisa>0 || bagian.length===0) bagian.push(sisa+' Pcs');
+  if(sisa>0 || bagian.length===0) bagian.push(sisa+' '+labelDasar);
   return bagian.join(' + ');
 }
 function petaSatuanKeKunci(satuanText){
