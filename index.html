@@ -842,6 +842,7 @@ footer a, footer p{color:#b9ccb4; font-size:13px; line-height:2;}
 <body>
 
 <div class="banner-offline" id="bannerOffline">⚡ Anda sedang offline — transaksi tetap tersimpan di perangkat ini dan akan disinkronkan saat internet kembali.</div>
+<div class="banner-offline" id="indikatorAntreanSync" style="background:#e07b2a; top:32px;"></div>
 <div class="toast-wrap" id="toastWrap"></div>
 
 <!-- ===================== HALAMAN TES SELEKSI PELAMAR (mode publik, tanpa login) ===================== -->
@@ -1154,18 +1155,40 @@ footer a, footer p{color:#b9ccb4; font-size:13px; line-height:2;}
     </div>
     <div class="form-grup" id="areaWAManualPublik" style="margin-top:8px;">
       <label>No. WhatsApp Anda</label>
-      <input type="text" id="keranjangWA" placeholder="08xxxxxxxxxx">
+      <input type="text" id="keranjangWA" placeholder="08xxxxxxxxxx" onblur="cekAlamatTersimpanUntukWA()">
     </div>
     <div class="form-grup" style="margin-top:10px;">
       <label>Metode Pengambilan</label>
-      <div style="display:flex; gap:6px;">
+      <div style="display:flex; gap:6px; flex-wrap:wrap;">
         <button type="button" class="chip aktif" id="btnAmbilSendiri" onclick="setMetodeAmbil('sendiri')" style="flex:1; font-size:12px;">🏪 Ambil di Apotek</button>
         <button type="button" class="chip" id="btnDiantar" onclick="setMetodeAmbil('antar')" style="flex:1; font-size:12px;">🛵 Diantar Kurir</button>
+        <button type="button" class="chip" id="btnEkspedisi" onclick="setMetodeAmbil('ekspedisi')" style="flex:1; font-size:12px;">📦 Ekspedisi (Luar Kota)</button>
       </div>
     </div>
     <div class="form-grup" id="areaAlamatAntar" hidden style="margin-top:8px;">
       <label>Alamat Pengantaran</label>
       <textarea id="keranjangAlamat" rows="2" placeholder="Alamat lengkap + patokan, untuk kurir" style="width:100%; border:1.5px solid var(--garis); border-radius:var(--radius-s); padding:10px; font-family:inherit; font-size:13.5px;"></textarea>
+      <button type="button" class="btn btn-garis btn-kecil" style="margin-top:6px;" onclick="ambilLokasiGPSKeranjang()" id="btnLokasiGPS">📍 Bagikan Lokasi GPS Saya (biar kurir tidak nyasar)</button>
+      <p id="statusLokasiGPS" style="font-size:11px; color:var(--teks-redup); margin-top:4px;"></p>
+      <label style="display:block; margin-top:10px; font-size:12px; font-weight:700; color:var(--teks-redup);">Cara Bayar</label>
+      <div style="display:flex; gap:6px; margin-top:4px;">
+        <button type="button" class="chip aktif" id="btnBayarDigital" onclick="setPreferensiBayarAntar('digital')" style="flex:1; font-size:12px;">💳 Transfer/QRIS Dulu</button>
+        <button type="button" class="chip" id="btnBayarCOD" onclick="setPreferensiBayarAntar('cod')" style="flex:1; font-size:12px;">💵 COD (Bayar di Tempat)</button>
+      </div>
+    </div>
+    <div class="form-grup" id="areaEkspedisi" hidden style="margin-top:8px;">
+      <label>Pilih Jasa Ekspedisi</label>
+      <select id="keranjangEkspedisi" style="width:100%; border:1.5px solid var(--garis); border-radius:var(--radius-s); padding:10px; font-family:inherit; font-size:13.5px;">
+        <option value="JNE">JNE</option>
+        <option value="J&T Express">J&amp;T Express</option>
+        <option value="SiCepat">SiCepat</option>
+        <option value="Anteraja">Anteraja</option>
+        <option value="Pos Indonesia">Pos Indonesia</option>
+        <option value="Lainnya">Lainnya (sebutkan di alamat)</option>
+      </select>
+      <label style="margin-top:8px; display:block;">Alamat Lengkap + Kode Pos</label>
+      <textarea id="keranjangAlamatEkspedisi" rows="2" placeholder="Alamat lengkap, kecamatan, kabupaten/kota, kode pos" style="width:100%; border:1.5px solid var(--garis); border-radius:var(--radius-s); padding:10px; font-family:inherit; font-size:13.5px;"></textarea>
+      <p style="font-size:11px; color:var(--teks-redup); margin-top:6px;">📦 Ongkir dihitung manual oleh apotek berdasarkan berat &amp; tujuan, akan diinfokan lewat WhatsApp sebelum dikirim. Pembayaran wajib transfer/QRIS dulu (tidak ada COD untuk pengiriman ekspedisi).</p>
     </div>
     <div class="kotak-bayar-digital" id="keranjangInfoBayar" style="margin-top:10px;"></div>
     <input type="text" id="keranjangHoneypot" name="website" autocomplete="off" tabindex="-1" style="position:absolute; left:-9999px; opacity:0;" aria-hidden="true">
@@ -1499,8 +1522,33 @@ footer a, footer p{color:#b9ccb4; font-size:13px; line-height:2;}
       <p id="loginError" style="color:#c0392b; font-size:12.5px; margin:0;" hidden></p>
       <button class="btn btn-utama btn-blok" id="btnLoginSubmit" onclick="loginDenganPassword()">Masuk</button>
       <button class="btn btn-garis btn-blok" style="margin-top:8px;" onclick="loginDenganSidikJari()">🔐 Masuk dengan Sidik Jari</button>
+      <button class="btn btn-aksen btn-blok" id="btnMasukOffline" hidden style="margin-top:8px;" onclick="masukModeOffline()">🔌 Masuk Mode Offline (pakai sesi terakhir)</button>
       <p style="font-size:11.5px; color:var(--teks-redup); margin:2px 0 0; text-align:center;">Belum punya akun karyawan? Hubungi Owner untuk didaftarkan.</p>
     </div>
+  </div>
+</div>
+
+<!-- ===================== MODAL KONFIRMASI PEMBAYARAN COD (KURIR) ===================== -->
+<div class="modal-overlay" id="modalKonfirmasiCOD" onclick="if(event.target===this)tutupModalKonfirmasiCOD()">
+  <div class="modal-kotak">
+    <div class="modal-atas">
+      <h3>💵 Konfirmasi Pembayaran COD</h3>
+      <button class="tutup-btn" onclick="tutupModalKonfirmasiCOD()">✕</button>
+    </div>
+    <p class="sub">Pastikan uang sudah benar-benar diterima dari pelanggan sebelum konfirmasi. Omzet baru tercatat setelah ini.</p>
+    <div class="panel-putih" style="padding:14px; margin-bottom:14px;">
+      <p style="font-size:12px; color:var(--teks-redup); margin-bottom:2px;">Pelanggan</p>
+      <p id="codNamaPelanggan" style="font-weight:700; margin-bottom:10px;">-</p>
+      <p style="font-size:12px; color:var(--teks-redup); margin-bottom:2px;">Total yang harus diterima</p>
+      <p id="codTotalTagihan" style="font-weight:800; font-size:20px; color:var(--hijau-tua);">Rp 0</p>
+    </div>
+    <label style="font-size:12.5px; font-weight:700; color:var(--teks-redup); display:block; margin-bottom:6px;">Diterima dalam bentuk apa?</label>
+    <div style="display:flex; gap:6px; margin-bottom:16px;">
+      <button type="button" class="chip" data-metode="tunai" onclick="pilihMetodeBayarCOD('tunai')" style="flex:1;">💵 Tunai</button>
+      <button type="button" class="chip" data-metode="qris" onclick="pilihMetodeBayarCOD('qris')" style="flex:1;">📱 QRIS</button>
+      <button type="button" class="chip" data-metode="transfer" onclick="pilihMetodeBayarCOD('transfer')" style="flex:1;">🏦 Transfer</button>
+    </div>
+    <button class="btn btn-utama btn-blok" onclick="konfirmasiPembayaranCODDiterima()">✅ Konfirmasi Uang Sudah Diterima</button>
   </div>
 </div>
 
@@ -1994,13 +2042,38 @@ async function muatDataCloud(){
     }catch(eBayar){ console.warn('Tabel pengaturan_pembayaran belum tersedia di database', eBayar); }
 
     try{
-      const {data:apotekCloud} = await db.from('pengaturan_apotek').select('id, sia_nomor, apa_nama, npwp, beban_bulanan, modal_awal, alamat, website, telepon, email_hr, email_apotek').eq('id',1).maybeSingle();
+      const {data:apotekCloud} = await db.from('pengaturan_apotek').select('id, sia_nomor, apa_nama, npwp, beban_bulanan, modal_awal, alamat, website, telepon, email_hr, email_apotek, lat, lng, radius_kurir_km').eq('id',1).maybeSingle();
       if(apotekCloud){
-        pengaturanApotek = {siaNomor:apotekCloud.sia_nomor||'', apaNama:apotekCloud.apa_nama||'', npwp:apotekCloud.npwp||'', bebanBulanan:apotekCloud.beban_bulanan||0, modalAwal:apotekCloud.modal_awal||0, alamat:apotekCloud.alamat||'', website:apotekCloud.website||'', telepon:apotekCloud.telepon||'', emailHR:apotekCloud.email_hr||'', emailApotek:apotekCloud.email_apotek||''}; // PIN sengaja TIDAK dimuat ke browser demi keamanan — verifikasi lewat verifikasiPinOwner()
+        pengaturanApotek = {siaNomor:apotekCloud.sia_nomor||'', apaNama:apotekCloud.apa_nama||'', npwp:apotekCloud.npwp||'', bebanBulanan:apotekCloud.beban_bulanan||0, modalAwal:apotekCloud.modal_awal||0, alamat:apotekCloud.alamat||'', website:apotekCloud.website||'', telepon:apotekCloud.telepon||'', emailHR:apotekCloud.email_hr||'', emailApotek:apotekCloud.email_apotek||'', lat:apotekCloud.lat||null, lng:apotekCloud.lng||null, radiusKurirKm:apotekCloud.radius_kurir_km||10}; // PIN sengaja TIDAK dimuat ke browser demi keamanan — verifikasi lewat verifikasiPinOwner()
         localStorage.setItem('bh_pengaturan_apotek', JSON.stringify(pengaturanApotek));
         renderLegalitasFooter();
       }
     }catch(eApotek){ console.warn('Tabel pengaturan_apotek belum tersedia di database', eApotek); }
+
+    try{
+      const {data:pesananCloud} = await db.from('pesanan_online').select('*').order('waktu',{ascending:true}).limit(200);
+      if(pesananCloud && pesananCloud.length){
+        // Gabungkan dengan yang lokal (hindari duplikat berdasarkan id) — supaya kasir/kurir di HP mana pun lihat pesanan yang sama
+        pesananCloud.forEach(p=>{
+          if(!pesananOnline.some(x=>x.id===p.id)){
+            pesananOnline.push({id:p.id, waktu:p.waktu, nama:p.nama, wa:p.wa, items: typeof p.items==='string'?JSON.parse(p.items):(p.items||[]), total:p.total, status:p.status, metode:p.metode, alamat:p.alamat, lat:p.lat, lng:p.lng, cod:!!p.cod, codBelumBayar: !!p.cod && p.status!=='selesai', ekspedisi:p.ekspedisi||null, resi:p.resi||null});
+          } else {
+            // Perbarui status kalau sudah diubah dari perangkat lain (misal dikonfirmasi kasir di HP toko, atau kurir sudah terima COD)
+            const lokal = pesananOnline.find(x=>x.id===p.id);
+            if(lokal){ lokal.status = p.status; lokal.resi = p.resi||lokal.resi; if(p.status==='selesai') lokal.codBelumBayar=false; }
+          }
+        });
+        localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline));
+      }
+    }catch(ePesanan){ console.warn('Tabel pesanan_online belum tersedia di database', ePesanan); }
+
+    try{
+      const {data:alamatCloud} = await db.from('alamat_pelanggan').select('*');
+      if(alamatCloud && alamatCloud.length){
+        alamatCloud.forEach(a=>{ alamatPelanggan[a.wa] = {alamat:a.alamat||'', lat:a.lat, lng:a.lng}; });
+        localStorage.setItem('bh_alamat_pelanggan', JSON.stringify(alamatPelanggan));
+      }
+    }catch(eAlamat){ console.warn('Tabel alamat_pelanggan belum tersedia di database', eAlamat); }
 
     try{
       const {data:hsCloud} = await db.from('harga_supplier').select('*');
@@ -2097,24 +2170,63 @@ async function muatDataCloud(){
   }
 }
 
+/* ===================== ANTREAN SINKRONISASI (retry otomatis saat internet kembali) ===================== */
+let antreanSinkronisasi = [];
+function tampilkanIndikatorAntrean(){
+  const el = document.getElementById('indikatorAntreanSync');
+  if(!el) return;
+  if(antreanSinkronisasi.length>0){
+    el.classList.add('tampil');
+    el.textContent = `⏳ ${antreanSinkronisasi.length} data menunggu sinkron ke cloud`;
+  } else {
+    el.classList.remove('tampil');
+  }
+}
+function tambahAntreanSinkron(label, fungsiUlang){
+  antreanSinkronisasi.push({label, fungsiUlang, waktu:new Date().toISOString()});
+  tampilkanIndikatorAntrean();
+}
+async function prosesAntreanSinkronisasi(){
+  if(!db || !navigator.onLine || antreanSinkronisasi.length===0) return;
+  const sisaGagal = [];
+  for(const item of antreanSinkronisasi){
+    try{ await item.fungsiUlang(); }
+    catch(e){ sisaGagal.push(item); }
+  }
+  const jumlahBerhasil = antreanSinkronisasi.length - sisaGagal.length;
+  antreanSinkronisasi = sisaGagal;
+  tampilkanIndikatorAntrean();
+  if(jumlahBerhasil>0) tampilkanToast(jumlahBerhasil+' data berhasil tersinkron ke cloud', true);
+}
+window.addEventListener('online', ()=> setTimeout(prosesAntreanSinkronisasi, 1500));
+
 async function updateStokCloud(id, stokBaru){
   if(!db) return;
+  const p = produkData.find(x=>x.id===id);
   try{
-    const p = produkData.find(x=>x.id===id);
     await db.from('stok_produk').upsert({produk_id:id, nama:p?p.nama:'', stok:stokBaru, updated_at:new Date().toISOString()});
-  }catch(e){ console.warn('Gagal sinkron stok, akan tersimpan lokal dulu', e); }
+  }catch(e){
+    console.warn('Gagal sinkron stok, akan tersimpan lokal dulu', e);
+    tambahAntreanSinkron('Stok: '+(p?p.nama:id), ()=>db.from('stok_produk').upsert({produk_id:id, nama:p?p.nama:'', stok:stokBaru, updated_at:new Date().toISOString()}));
+  }
 }
 
 async function simpanTransaksiCloud(total, jumlahItem, kasir){
   if(!db) return;
   try{ await db.from('transaksi').insert({total, jumlah_item:jumlahItem, kasir}); }
-  catch(e){ console.warn('Gagal sinkron transaksi, tersimpan lokal dulu', e); }
+  catch(e){
+    console.warn('Gagal sinkron transaksi, tersimpan lokal dulu', e);
+    tambahAntreanSinkron('Transaksi Rp'+total.toLocaleString('id-ID'), ()=>db.from('transaksi').insert({total, jumlah_item:jumlahItem, kasir}));
+  }
 }
 
 async function simpanAbsensiCloud(nama, metode){
   if(!db) return;
   try{ await db.from('absensi').insert({nama, metode}); }
-  catch(e){ console.warn('Gagal sinkron absensi, tersimpan lokal dulu', e); }
+  catch(e){
+    console.warn('Gagal sinkron absensi, tersimpan lokal dulu', e);
+    tambahAntreanSinkron('Absensi: '+nama, ()=>db.from('absensi').insert({nama, metode}));
+  }
 }
 
 async function simpanProdukCloud(p){
@@ -2152,6 +2264,24 @@ function pasangRealtimeSync(){
       penjualanProduk[row.produk_id] = {harian:row.harian||0, bulanan:row.bulanan||0, omzetHarian:row.omzet_harian||0, omzetBulanan:row.omzet_bulanan||0};
       renderTerlaris();
       const tp=document.getElementById('tabelPareto'); if(tp){ tp.innerHTML=tabelParetoHTML(); renderRingkasanPareto(); }
+    })
+    .on('postgres_changes', {event:'INSERT', schema:'public', table:'pesanan_online'}, payload=>{
+      const row=payload.new; if(!row) return;
+      if(pesananOnline.some(x=>x.id===row.id)) return;
+      pesananOnline.push({id:row.id, waktu:row.waktu, nama:row.nama, wa:row.wa, items: typeof row.items==='string'?JSON.parse(row.items):(row.items||[]), total:row.total, status:row.status, metode:row.metode, alamat:row.alamat, lat:row.lat, lng:row.lng, cod:!!row.cod, codBelumBayar:!!row.cod, ekspedisi:row.ekspedisi||null, resi:row.resi||null});
+      localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline));
+      const tpo=document.getElementById('tabelPesananOnline'); if(tpo) tpo.innerHTML=tabelPesananOnlineHTML();
+      const tk=document.getElementById('tabelKurir'); if(tk) tk.innerHTML=tabelKurirHTML();
+      const pesanNotif = row.metode==='antar' ? '🛵 Pesanan baru perlu diantar dari '+(row.nama||'pelanggan') : row.metode==='ekspedisi' ? '📦 Pesanan baru via ekspedisi dari '+(row.nama||'pelanggan') : '🧾 Ada pesanan online baru masuk dari '+(row.nama||'pelanggan');
+      tampilkanToast(pesanNotif, true);
+      if(peranAktif) notifikasiPesananBaru(pesanNotif); // hanya bunyi/notif kalau ada staf yang sedang login di perangkat ini
+    })
+    .on('postgres_changes', {event:'UPDATE', schema:'public', table:'pesanan_online'}, payload=>{
+      const row=payload.new; if(!row) return;
+      const lokal = pesananOnline.find(x=>x.id===row.id);
+      if(lokal){ lokal.status = row.status; lokal.resi = row.resi||lokal.resi; if(row.status==='selesai') lokal.codBelumBayar=false; localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline)); }
+      const tpo=document.getElementById('tabelPesananOnline'); if(tpo) tpo.innerHTML=tabelPesananOnlineHTML();
+      const tk=document.getElementById('tabelKurir'); if(tk) tk.innerHTML=tabelKurirHTML();
     })
     .subscribe();
 }
@@ -2271,64 +2401,235 @@ function renderInfoBayarKeranjang(){
   el.innerHTML = html;
 }
 let pesananOnline = JSON.parse(localStorage.getItem('bh_pesanan_online')||'[]');
-function catatPesananOnline(nama, wa, items, total, metode, alamat){
+// alamatPelanggan: { "62812xxxx": { alamat:'...', lat:1.23, lng:99.45 } } — supaya kurir tidak nyasar & tidak perlu tanya ulang tiap order
+let alamatPelanggan = JSON.parse(localStorage.getItem('bh_alamat_pelanggan')||'{}');
+let lokasiGPSKeranjangSementara = null; // {lat, lng} hasil GPS terakhir yang diambil di form checkout
+
+function ambilLokasiGPSKeranjang(){
+  const status = document.getElementById('statusLokasiGPS');
+  if(!navigator.geolocation){ if(status) status.textContent='HP/browser ini tidak mendukung GPS.'; return; }
+  if(status) status.textContent='📡 Mengambil lokasi GPS Anda...';
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      lokasiGPSKeranjangSementara = {lat:pos.coords.latitude, lng:pos.coords.longitude};
+      if(pengaturanApotek.lat && pengaturanApotek.lng){
+        const jarak = jarakKM(pengaturanApotek.lat, pengaturanApotek.lng, lokasiGPSKeranjangSementara.lat, lokasiGPSKeranjangSementara.lng);
+        const radius = pengaturanApotek.radiusKurirKm || 10;
+        if(jarak > radius){
+          if(status) status.innerHTML = `⚠️ Lokasi Anda ±${jarak.toFixed(1)} km dari apotek, di luar jangkauan kurir kami (radius ${radius} km). Disarankan pakai <strong>"📦 Ekspedisi (Luar Kota)"</strong> di atas.`;
+          tampilkanToast('Lokasi Anda di luar jangkauan kurir, disarankan pakai Ekspedisi', false);
+          return;
+        }
+        if(status) status.textContent = `✅ Lokasi GPS diambil (±${jarak.toFixed(1)} km dari apotek) — kurir akan langsung diarahkan ke titik ini.`;
+        tampilkanToast('Lokasi GPS tersimpan, akan dikirim bersama pesanan', true);
+        return;
+      }
+      if(status) status.textContent='✅ Lokasi GPS berhasil diambil — kurir akan langsung diarahkan ke titik ini.';
+      tampilkanToast('Lokasi GPS tersimpan, akan dikirim bersama pesanan', true);
+    },
+    err=>{
+      lokasiGPSKeranjangSementara = null;
+      if(status) status.textContent='⚠️ Gagal mengambil lokasi (izin ditolak/GPS mati). Alamat teks tetap dipakai.';
+    },
+    {enableHighAccuracy:true, timeout:10000}
+  );
+}
+function cekAlamatTersimpanUntukWA(){
+  const waEl = document.getElementById('keranjangWA');
+  const alamatEl = document.getElementById('keranjangAlamat');
+  const status = document.getElementById('statusLokasiGPS');
+  if(!waEl || !alamatEl) return;
+  const wa = normalisasiWA(waEl.value.trim());
+  if(wa.length<9) return;
+  const tersimpan = alamatPelanggan[wa];
+  if(tersimpan && !alamatEl.value.trim()){
+    alamatEl.value = tersimpan.alamat || '';
+    if(tersimpan.lat && tersimpan.lng){
+      lokasiGPSKeranjangSementara = {lat:tersimpan.lat, lng:tersimpan.lng};
+      if(status) status.textContent='📍 Memakai lokasi tersimpan dari pesanan Anda sebelumnya.';
+    }
+    tampilkanToast('Alamat pengantaran Anda sebelumnya otomatis terisi', true);
+  }
+}
+function simpanAlamatPelanggan(wa, alamat, lokasi){
+  if(!wa) return;
+  const waNorm = normalisasiWA(wa);
+  if(waNorm.length<9) return;
+  alamatPelanggan[waNorm] = {alamat: alamat||'', lat: lokasi?lokasi.lat:null, lng: lokasi?lokasi.lng:null};
+  localStorage.setItem('bh_alamat_pelanggan', JSON.stringify(alamatPelanggan));
+  simpanAlamatPelangganCloud(waNorm, alamatPelanggan[waNorm]);
+}
+async function simpanAlamatPelangganCloud(wa, data){
+  if(!db) return;
+  try{ await db.from('alamat_pelanggan').upsert({wa, alamat:data.alamat, lat:data.lat, lng:data.lng, updated_at:new Date().toISOString()}, {onConflict:'wa'}); }
+  catch(e){ console.warn('Gagal sinkron alamat pelanggan', e); }
+}
+function catatPesananOnline(nama, wa, items, total, metode, alamat, lokasi, cod, ekspedisi){
   const entri = {
     id:'po'+Date.now(), waktu:new Date().toISOString(), nama: nama||'Pelanggan Online',
     wa: wa ? normalisasiWA(wa) : '', items: items.map(i=>({id:i.id, nama:i.nama, qty:i.qty, harga:i.harga})),
-    total, status:'menunggu', metode: metode||'sendiri', alamat: alamat||''
+    total, status:'menunggu', metode: metode||'sendiri', alamat: alamat||'',
+    lat: lokasi?lokasi.lat:null, lng: lokasi?lokasi.lng:null,
+    cod: !!cod, // true = pelanggan minta bayar di tempat (COD), belum tercatat sebagai omzet sampai kurir terima uang
+    codBelumBayar: !!cod,
+    ekspedisi: ekspedisi||null, resi:null // khusus metode 'ekspedisi': nama jasa kirim & no. resi (diisi kasir setelah kirim)
   };
   pesananOnline.push(entri);
   localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline));
   simpanPesananOnlineCloud(entri);
+  if(metode==='antar' && wa) simpanAlamatPelanggan(wa, alamat, lokasi);
 }
 async function simpanPesananOnlineCloud(entri){
   if(!db) return;
-  try{ await db.from('pesanan_online').insert({id:entri.id, waktu:entri.waktu, nama:entri.nama, wa:entri.wa, items:JSON.stringify(entri.items), total:entri.total, status:entri.status, metode:entri.metode, alamat:entri.alamat}); }
+  try{ await db.from('pesanan_online').insert({id:entri.id, waktu:entri.waktu, nama:entri.nama, wa:entri.wa, items:JSON.stringify(entri.items), total:entri.total, status:entri.status, metode:entri.metode, alamat:entri.alamat, lat:entri.lat, lng:entri.lng, cod:entri.cod, ekspedisi:entri.ekspedisi, resi:entri.resi}); }
   catch(e){ console.warn('Gagal sinkron pesanan online', e); }
+}
+async function simpanResiCloud(id, resi){
+  if(!db) return;
+  try{ await db.from('pesanan_online').update({resi, status:'dikirim'}).eq('id', id); }catch(e){ console.warn('Gagal sinkron resi', e); }
+}
+function simpanResiEkspedisi(id){
+  const input = document.getElementById('resiInput_'+id);
+  if(!input) return;
+  const resi = input.value.trim();
+  if(!resi){ tampilkanToast('Isi nomor resi dulu'); return; }
+  const p = pesananOnline.find(x=>x.id===id);
+  if(!p) return;
+  p.resi = resi;
+  p.status = 'dikirim';
+  localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline));
+  simpanResiCloud(id, resi);
+  const tbl=document.getElementById('tabelPesananOnline'); if(tbl) tbl.innerHTML=tabelPesananOnlineHTML();
+  tampilkanToast('Nomor resi tersimpan, status pesanan jadi "Dikirim"', true);
 }
 async function perbaruiPesananOnlineCloud(id, status){
   if(!db) return;
   try{ await db.from('pesanan_online').update({status}).eq('id', id); }catch(e){ console.warn('Gagal update status pesanan online', e); }
 }
+let idPesananCODAktif = null;
+function tandaiPesananSelesaiDiantar(id){
+  const p = pesananOnline.find(x=>x.id===id);
+  if(!p) return;
+  if(p.codBelumBayar){
+    bukaModalKonfirmasiCOD(id);
+    return;
+  }
+  p.status = 'selesai';
+  localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline));
+  perbaruiPesananOnlineCloud(id, 'selesai');
+  const tk=document.getElementById('tabelKurir'); if(tk) tk.innerHTML=tabelKurirHTML();
+  const tpo=document.getElementById('tabelPesananOnline'); if(tpo) tpo.innerHTML=tabelPesananOnlineHTML();
+  tampilkanToast('Pesanan ditandai sudah selesai diantar', true);
+}
+function bukaModalKonfirmasiCOD(id){
+  const p = pesananOnline.find(x=>x.id===id);
+  if(!p) return;
+  idPesananCODAktif = id;
+  document.getElementById('codNamaPelanggan').textContent = p.nama;
+  document.getElementById('codTotalTagihan').textContent = formatRp(p.total);
+  document.querySelectorAll('#modalKonfirmasiCOD .chip').forEach(b=>b.classList.remove('aktif'));
+  document.getElementById('modalKonfirmasiCOD').classList.add('terbuka');
+  document.getElementById('overlay').classList.add('terbuka');
+}
+function tutupModalKonfirmasiCOD(){
+  document.getElementById('modalKonfirmasiCOD').classList.remove('terbuka');
+  document.getElementById('overlay').classList.remove('terbuka');
+  idPesananCODAktif = null;
+}
+let metodeBayarCODDipilih = null;
+function pilihMetodeBayarCOD(metode){
+  metodeBayarCODDipilih = metode;
+  document.querySelectorAll('#modalKonfirmasiCOD .chip').forEach(b=>b.classList.toggle('aktif', b.dataset.metode===metode));
+}
+function konfirmasiPembayaranCODDiterima(){
+  if(!idPesananCODAktif){ return; }
+  if(!metodeBayarCODDipilih){ tampilkanToast('Pilih metode pembayaran yang diterima dulu'); return; }
+  const p = pesananOnline.find(x=>x.id===idPesananCODAktif);
+  if(!p) return;
+  // Baru sekarang omzet dicatat — uang benar-benar sudah diterima kurir dari pelanggan
+  const namaKasir = namaLoginAktif || 'Kurir';
+  p.items.forEach(i=> catatPenjualan(i.id, i.qty, i.harga));
+  const jumlahItem = p.items.reduce((a,i)=>a+i.qty,0);
+  const labelMetode = metodeBayarCODDipilih==='tunai' ? 'Tunai (COD)' : metodeBayarCODDipilih==='qris' ? 'QRIS (COD)' : 'Transfer (COD)';
+  riwayatTransaksi.push({waktu:new Date().toISOString(), total:p.total, items:jumlahItem, kasir:namaKasir, metodeBayar:labelMetode});
+  simpanTransaksiCloud(p.total, jumlahItem, namaKasir);
+  catatSemuaKombinasiTransaksi(p.items);
+  p.codBelumBayar = false;
+  p.status = 'selesai';
+  localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline));
+  perbaruiPesananOnlineCloud(idPesananCODAktif, 'selesai');
+  simpan();
+  tutupModalKonfirmasiCOD();
+  const tk=document.getElementById('tabelKurir'); if(tk) tk.innerHTML=tabelKurirHTML();
+  const tpo=document.getElementById('tabelPesananOnline'); if(tpo) tpo.innerHTML=tabelPesananOnlineHTML();
+  renderTerlaris();
+  tampilkanToast('Pembayaran '+labelMetode+' diterima, omzet tercatat', true);
+}
+function bukaRuteKurir(lat, lng, alamat){
+  const url = (lat && lng) ? `https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}` : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(alamat||'')}`;
+  window.open(url, '_blank');
+}
 function tabelPesananOnlineHTML(){
   if(pesananOnline.length===0) return '<tr><td colspan="5" style="color:var(--teks-redup);">Belum ada pesanan online.</td></tr>';
-  const label = {menunggu:'⏳ Menunggu', dikonfirmasi:'✅ Dikonfirmasi', dibatalkan:'❌ Dibatalkan'};
-  const kelas = {menunggu:'status-berlebih', dikonfirmasi:'status-hijau', dibatalkan:'status-abu'};
+  const bolehKonfirmasi = peranAktif && ['owner','kasir','gudang'].includes(peranAktif.id);
+  const label = {menunggu:'⏳ Menunggu', dikonfirmasi:'✅ Dikonfirmasi', dikirim:'📦 Dikirim', selesai:'🛵 Selesai Diantar', dibatalkan:'❌ Dibatalkan'};
+  const kelas = {menunggu:'status-berlebih', dikonfirmasi:'status-hijau', dikirim:'status-hijau', selesai:'status-hijau', dibatalkan:'status-abu'};
   return pesananOnline.slice().reverse().map(p=>{
     const daftarItem = p.items.map(i=>i.nama+' x'+i.qty).join(', ');
-    const infoAntar = p.metode==='antar' ? `<br><span style="color:var(--oranye-tua); font-size:11px;">🛵 Diantar: ${escapeHTML(p.alamat||'-')}</span>` : `<br><span style="color:var(--teks-redup); font-size:11px;">🏪 Ambil sendiri</span>`;
+    let infoAntar;
+    if(p.metode==='antar') infoAntar = `<br><span style="color:var(--oranye-tua); font-size:11px;">🛵 Diantar: ${escapeHTML(p.alamat||'-')}</span>`;
+    else if(p.metode==='ekspedisi') infoAntar = `<br><span style="color:var(--oranye-tua); font-size:11px;">📦 ${escapeHTML(p.ekspedisi||'Ekspedisi')}: ${escapeHTML(p.alamat||'-')}</span>${p.resi?`<br><span style="font-size:11px; color:var(--hijau-tua);">Resi: ${escapeHTML(p.resi)}</span>`:''}`;
+    else infoAntar = `<br><span style="color:var(--teks-redup); font-size:11px;">🏪 Ambil sendiri</span>`;
+    const perluResi = p.metode==='ekspedisi' && p.status==='dikonfirmasi' && !p.resi;
+    let kolomAksi;
+    if(!bolehKonfirmasi){
+      kolomAksi = '<span style="font-size:11px; color:var(--teks-redup);">🔒 Lihat saja</span>';
+    } else if(p.status==='menunggu'){
+      kolomAksi = `<button class="btn btn-utama btn-kecil" onclick="konfirmasiPesananOnline('${p.id}')">✅ Konfirmasi</button>
+        <button class="btn btn-garis btn-kecil" onclick="batalkanPesananOnline('${p.id}')">❌ Batal</button>`;
+    } else if(perluResi){
+      kolomAksi = `<input type="text" id="resiInput_${p.id}" placeholder="No. Resi" style="width:90px; border:1px solid var(--garis); border-radius:6px; padding:5px 6px; font-size:11.5px; margin-bottom:4px;">
+        <button class="btn btn-utama btn-kecil" onclick="simpanResiEkspedisi('${p.id}')">💾 Simpan Resi</button>`;
+    } else {
+      kolomAksi = '—';
+    }
     return `<tr>
       <td>${new Date(p.waktu).toLocaleString('id-ID')}</td>
       <td>${escapeHTML(p.nama)}${p.wa?' ('+escapeHTML(p.wa)+')':''}${infoAntar}</td>
       <td style="white-space:normal; max-width:150px;">${daftarItem}</td>
       <td>${formatRp(p.total)}</td>
-      <td><span class="status-pil ${kelas[p.status]}">${label[p.status]}</span></td>
-      <td>${p.status==='menunggu' ? `
-        <button class="btn btn-utama btn-kecil" onclick="konfirmasiPesananOnline('${p.id}')">✅ Konfirmasi</button>
-        <button class="btn btn-garis btn-kecil" onclick="batalkanPesananOnline('${p.id}')">❌ Batal</button>` : '—'}
+      <td><span class="status-pil ${kelas[p.status]}">${label[p.status]}</span>${p.metode==='antar' ? (p.cod?'<br><span class="status-pil status-berlebih" style="margin-top:3px; display:inline-block;">💵 Minta COD</span>':'<br><span class="status-pil status-hijau" style="margin-top:3px; display:inline-block;">💳 Sudah Transfer/QRIS</span>') : ''}</td>
+      <td>${kolomAksi}
       </td></tr>`;
   }).join('');
 }
 function konfirmasiPesananOnline(id){
   const p = pesananOnline.find(x=>x.id===id);
   if(!p) return;
+  // Barang tetap dikeluarkan dari stok begitu dikonfirmasi (baik prabayar maupun COD — barang sudah dikirim ke kurir)
   p.items.forEach(i=>{
     stokBarang[i.id] = Math.max(0, (stokBarang[i.id]||0) - i.qty);
     updateStokCloud(i.id, stokBarang[i.id]);
-    catatPenjualan(i.id, i.qty, i.harga);
   });
   const namaKasir = namaLoginAktif || 'Online';
-  const jumlahItem = p.items.reduce((a,i)=>a+i.qty,0);
-  riwayatTransaksi.push({waktu:new Date().toISOString(), total:p.total, items:jumlahItem, kasir:namaKasir, metodeBayar:'Online'});
-  simpanTransaksiCloud(p.total, jumlahItem, namaKasir);
-  catatSemuaKombinasiTransaksi(p.items);
+  const codMenungguBayar = p.metode==='antar' && p.cod;
+  if(!codMenungguBayar){
+    // Prabayar (sudah transfer/QRIS) atau ambil sendiri: catat omzet sekarang juga
+    p.items.forEach(i=> catatPenjualan(i.id, i.qty, i.harga));
+    const jumlahItem = p.items.reduce((a,i)=>a+i.qty,0);
+    riwayatTransaksi.push({waktu:new Date().toISOString(), total:p.total, items:jumlahItem, kasir:namaKasir, metodeBayar:'Online'});
+    simpanTransaksiCloud(p.total, jumlahItem, namaKasir);
+    catatSemuaKombinasiTransaksi(p.items);
+  }
+  // Untuk COD, omzet BARU dicatat nanti saat kurir konfirmasi uang diterima (lihat konfirmasiPembayaranCODDiterima)
   p.status='dikonfirmasi';
   localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline));
   perbaruiPesananOnlineCloud(id, 'dikonfirmasi');
   simpan();
   const tbl=document.getElementById('tabelPesananOnline'); if(tbl) tbl.innerHTML=tabelPesananOnlineHTML();
+  const tk=document.getElementById('tabelKurir'); if(tk) tk.innerHTML=tabelKurirHTML();
   renderProduk(); renderTerlaris();
-  tampilkanToast('Pesanan dikonfirmasi, stok & omzet diperbarui', true);
+  tampilkanToast(codMenungguBayar ? 'Pesanan dikonfirmasi (COD) — omzet dicatat setelah kurir terima uang' : (p.metode==='antar' ? 'Pesanan dikonfirmasi, sudah masuk daftar kurir' : p.metode==='ekspedisi' ? 'Pesanan dikonfirmasi — isi nomor resi setelah dikirim ke ekspedisi' : 'Pesanan dikonfirmasi, stok & omzet diperbarui'), true);
 }
 function batalkanPesananOnline(id){
   const p = pesananOnline.find(x=>x.id===id);
@@ -2337,6 +2638,7 @@ function batalkanPesananOnline(id){
   localStorage.setItem('bh_pesanan_online', JSON.stringify(pesananOnline));
   perbaruiPesananOnlineCloud(id, 'dibatalkan');
   const tbl=document.getElementById('tabelPesananOnline'); if(tbl) tbl.innerHTML=tabelPesananOnlineHTML();
+  const tk=document.getElementById('tabelKurir'); if(tk) tk.innerHTML=tabelKurirHTML();
   tampilkanToast('Pesanan dibatalkan');
 }
 
@@ -2516,6 +2818,66 @@ function normalisasiWA(nomor){
   let n = nomor.replace(/\D/g,'');
   if(n.startsWith('0')) n = '62'+n.slice(1);
   return n;
+}
+/* ===================== REMINDER OBAT RUTIN (deteksi pola pembelian berulang) ===================== */
+function analisisPelangganPerluReminder(){
+  const hasil = [];
+  const hariIni = new Date();
+  Object.keys(riwayatPelanggan).forEach(wa=>{
+    const data = riwayatPelanggan[wa];
+    if(!data.pembelian || data.pembelian.length<2) return;
+    // Kelompokkan pembelian per produk
+    const perProduk = {};
+    data.pembelian.forEach(p=>{ if(!perProduk[p.produkId]) perProduk[p.produkId]=[]; perProduk[p.produkId].push(p.tanggal); });
+    Object.keys(perProduk).forEach(produkId=>{
+      const tanggalList = perProduk[produkId].slice().sort();
+      if(tanggalList.length<2) return; // butuh minimal 2x beli produk yang sama untuk hitung pola
+      // Hitung rata-rata jarak hari antar pembelian
+      let totalHari = 0, jumlahJarak = 0;
+      for(let i=1;i<tanggalList.length;i++){
+        const jarak = (new Date(tanggalList[i]) - new Date(tanggalList[i-1])) / 86400000;
+        if(jarak>0){ totalHari += jarak; jumlahJarak++; }
+      }
+      if(jumlahJarak===0) return;
+      const rataHari = Math.round(totalHari/jumlahJarak);
+      if(rataHari<3 || rataHari>120) return; // saring pola yang tidak masuk akal (kebeli 2x sekaligus / terlalu jarang)
+      const tanggalTerakhir = new Date(tanggalList[tanggalList.length-1]);
+      const perkiraanButuhLagi = new Date(tanggalTerakhir.getTime() + rataHari*86400000);
+      const selisihHariDariPerkiraan = Math.round((hariIni - perkiraanButuhLagi) / 86400000);
+      // Tampilkan kalau sudah masuk masa perkiraan butuh lagi (H-3) sampai belum lewat 14 hari dari situ (biar tidak basi)
+      if(selisihHariDariPerkiraan >= -3 && selisihHariDariPerkiraan <= 14){
+        const p = produkData.find(x=>x.id==produkId);
+        hasil.push({
+          wa, nama: data.nama||'Pelanggan', produkId, namaProduk: p?p.nama:('Produk #'+produkId),
+          tanggalTerakhir: tanggalList[tanggalList.length-1], rataHari, perkiraanButuhLagi: perkiraanButuhLagi.toISOString().slice(0,10)
+        });
+      }
+    });
+  });
+  return hasil.sort((a,b)=> a.perkiraanButuhLagi.localeCompare(b.perkiraanButuhLagi));
+}
+function panelReminderObatRutinHTML(){
+  const daftar = analisisPelangganPerluReminder();
+  return `
+  <div class="panel-putih">
+    <h4>🔔 Reminder Obat Rutin — Otomatis Terdeteksi</h4>
+    <p style="font-size:12px; color:var(--teks-redup); margin-top:-6px; margin-bottom:12px;">Dihitung dari pola pembelian berulang pelanggan (minimal 2x beli produk yang sama). Tap "Kirim Reminder" untuk buka WA dengan pesan siap kirim.</p>
+    <div class="tabel-scroll"><table class="tabel-simple">
+      <thead><tr><th>Pelanggan</th><th>Produk</th><th>Terakhir Beli</th><th>Perkiraan Butuh Lagi</th><th>Aksi</th></tr></thead>
+      <tbody>${daftar.length===0 ? '<tr><td colspan="5" style="color:var(--teks-redup);">Belum ada pola pembelian rutin yang cukup jelas untuk saat ini.</td></tr>' : daftar.map(d=>`
+        <tr>
+          <td>${escapeHTML(d.nama)}<br><span style="font-size:11px; color:var(--teks-redup);">${escapeHTML(d.wa)}</span></td>
+          <td>${escapeHTML(d.namaProduk)}</td>
+          <td>${new Date(d.tanggalTerakhir).toLocaleDateString('id-ID')}</td>
+          <td>${new Date(d.perkiraanButuhLagi).toLocaleDateString('id-ID')} <span style="font-size:10.5px; color:var(--teks-redup);">(±${d.rataHari} hari sekali)</span></td>
+          <td><button class="btn btn-utama btn-kecil" onclick="kirimReminderObatRutin('${d.wa}','${d.nama.replace(/'/g,"")}','${d.namaProduk.replace(/'/g,"")}')">📲 Kirim Reminder</button></td>
+        </tr>`).join('')}</tbody>
+    </table></div>
+  </div>`;
+}
+function kirimReminderObatRutin(wa, nama, namaProduk){
+  const teks = `Halo ${nama} 🙏 Ini dari Apotek Binhafas. Berdasarkan riwayat pembelian Anda, sepertinya stok *${namaProduk}* Anda mungkin sudah mau habis. Mau pesan lagi? Kami siap bantu, tinggal balas chat ini ya 😊`;
+  window.open('https://wa.me/'+wa+'?text='+encodeURIComponent(teks), '_blank');
 }
 function catatRiwayatPelanggan(nomorWA, nama, daftarItem){
   if(!nomorWA || !nomorWA.trim()) return;
@@ -2930,31 +3292,53 @@ function logoutPublik(){
   tampilkanToast('Berhasil keluar dari akun member', true);
 }
 let metodeAmbilPublik = 'sendiri';
+let preferensiBayarAntar = 'digital'; // 'digital' = transfer/QRIS dulu, 'cod' = bayar tunai/QRIS saat barang sampai
 function setMetodeAmbil(metode){
   metodeAmbilPublik = metode;
   document.getElementById('btnAmbilSendiri').classList.toggle('aktif', metode==='sendiri');
   document.getElementById('btnDiantar').classList.toggle('aktif', metode==='antar');
+  document.getElementById('btnEkspedisi').classList.toggle('aktif', metode==='ekspedisi');
   document.getElementById('areaAlamatAntar').hidden = metode!=='antar';
+  document.getElementById('areaEkspedisi').hidden = metode!=='ekspedisi';
+}
+function setPreferensiBayarAntar(pref){
+  preferensiBayarAntar = pref;
+  document.getElementById('btnBayarDigital').classList.toggle('aktif', pref==='digital');
+  document.getElementById('btnBayarCOD').classList.toggle('aktif', pref==='cod');
 }
 function checkoutViaWA(){
   if(document.getElementById('keranjangHoneypot')?.value){ return; } // honeypot: field tersembunyi ini hanya keisi oleh bot
   if(keranjang.length===0){ tampilkanToast('Keranjang masih kosong'); return; }
   const alamatAntar = document.getElementById('keranjangAlamat')?.value.trim() || '';
+  const ekspedisiNama = document.getElementById('keranjangEkspedisi')?.value || '';
+  const alamatEkspedisi = document.getElementById('keranjangAlamatEkspedisi')?.value.trim() || '';
   if(metodeAmbilPublik==='antar' && !alamatAntar){ tampilkanToast('Isi alamat pengantaran dulu, atau pilih "Ambil di Apotek"', 'gagal'); return; }
+  if(metodeAmbilPublik==='ekspedisi' && !alamatEkspedisi){ tampilkanToast('Isi alamat lengkap + kode pos dulu untuk pengiriman ekspedisi', 'gagal'); return; }
   const subtotal = keranjang.reduce((a,i)=>a+i.harga*i.qty,0);
   const namaPembeli = pelangganPublikAktif ? pelangganPublikAktif.nama : (document.getElementById('keranjangNama')?.value.trim() || 'Pelanggan Online');
   const waPembeli = pelangganPublikAktif ? pelangganPublikAktif.wa : (document.getElementById('keranjangWA')?.value.trim() || '');
+  const codDipilih = metodeAmbilPublik==='antar' && preferensiBayarAntar==='cod';
+  const alamatFinal = metodeAmbilPublik==='ekspedisi' ? (ekspedisiNama+' — '+alamatEkspedisi) : alamatAntar;
   let teks = 'Halo Apotek Binhafas, saya ingin memesan:%0A';
   keranjang.forEach(i=>{ teks += `- ${i.nama} x${i.qty} (${formatRp(i.harga*i.qty)})%0A`; });
   teks += `%0ATotal: ${formatRp(subtotal)}%0ANama: ${namaPembeli}`;
   if(pelangganPublikAktif) teks += `%0A(${pelangganPublikAktif.tipe==='grosir'?'Harga Grosir':'Harga Member'} — sudah login)`;
-  teks += metodeAmbilPublik==='antar' ? `%0A🛵 Metode: Diantar Kurir%0AAlamat: ${encodeURIComponent(alamatAntar)}` : `%0A🏪 Metode: Ambil Sendiri di Apotek`;
+  if(metodeAmbilPublik==='antar'){
+    teks += `%0A🛵 Metode: Diantar Kurir%0AAlamat: ${encodeURIComponent(alamatAntar)}%0A💰 Cara Bayar: ${codDipilih?'COD (tunai/QRIS saat barang sampai)':'Transfer/QRIS dulu sebelum diantar'}`;
+  } else if(metodeAmbilPublik==='ekspedisi'){
+    teks += `%0A📦 Metode: Kirim via Ekspedisi (${encodeURIComponent(ekspedisiNama)})%0AAlamat: ${encodeURIComponent(alamatEkspedisi)}%0A💰 Cara Bayar: Transfer/QRIS dulu (ongkir menyusul diinfokan apotek)`;
+  } else {
+    teks += `%0A🏪 Metode: Ambil Sendiri di Apotek`;
+  }
   teks += `%0AMohon konfirmasi ketersediaan dan pembayaran. Terima kasih.`;
-  catatPesananOnline(namaPembeli, waPembeli, keranjang, subtotal, metodeAmbilPublik, alamatAntar);
+  catatPesananOnline(namaPembeli, waPembeli, keranjang, subtotal, metodeAmbilPublik, alamatFinal, metodeAmbilPublik==='antar'?lokasiGPSKeranjangSementara:null, codDipilih, metodeAmbilPublik==='ekspedisi'?ekspedisiNama:null);
   const namaEl=document.getElementById('keranjangNama'); if(namaEl) namaEl.value='';
   const waEl=document.getElementById('keranjangWA'); if(waEl) waEl.value='';
   const alamatEl=document.getElementById('keranjangAlamat'); if(alamatEl) alamatEl.value='';
-  setMetodeAmbil('sendiri');
+  const alamatEkspEl=document.getElementById('keranjangAlamatEkspedisi'); if(alamatEkspEl) alamatEkspEl.value='';
+  const statusGPSEl=document.getElementById('statusLokasiGPS'); if(statusGPSEl) statusGPSEl.textContent='';
+  lokasiGPSKeranjangSementara = null;
+  setMetodeAmbil('sendiri'); setPreferensiBayarAntar('digital');
   keranjang=[]; simpan(); renderKeranjang();
   const noWAToko = normalisasiWA(pengaturanApotek.telepon || '6281234567890');
   window.open('https://wa.me/'+noWAToko+'?text='+teks, '_blank');
@@ -3234,8 +3618,30 @@ function restoreSemuaData(input){
 /* ===================== PENGATURAN APOTEK (LEGALITAS, PIN, BEBAN OPERASIONAL) ===================== */
 // CATATAN KEAMANAN: PIN Owner TIDAK PERNAH disimpan di localStorage atau dikirim ke browser dalam bentuk apapun.
 // Verifikasi PIN dilakukan lewat fungsi verify_owner_pin di server Supabase (lihat verifikasiPinOwner()), supaya PIN asli tidak bisa diintip lewat DevTools browser.
-let pengaturanApotek = Object.assign({siaNomor:'', apaNama:'', npwp:'', bebanBulanan:0, modalAwal:0, alamat:'Jln Tapaktuan Medan, Dusun Blang Dalam, Trumon Tengah, Aceh Selatan', website:'www.apotekbinhafas.com', telepon:'082275823099', emailHR:'hr@apotekbinhafas.com', emailApotek:'info@apotekbinhafas.com'}, (()=>{ const s=JSON.parse(localStorage.getItem('bh_pengaturan_apotek')||'{}'); delete s.ownerPin; return s; })());
-function simpanPengaturanApotek(){
+let pengaturanApotek = Object.assign({siaNomor:'', apaNama:'', npwp:'', bebanBulanan:0, modalAwal:0, alamat:'Jln Tapaktuan Medan, Dusun Blang Dalam, Trumon Tengah, Aceh Selatan', website:'www.apotekbinhafas.com', telepon:'082275823099', emailHR:'hr@apotekbinhafas.com', emailApotek:'info@apotekbinhafas.com', lat:null, lng:null, radiusKurirKm:10}, (()=>{ const s=JSON.parse(localStorage.getItem('bh_pengaturan_apotek')||'{}'); delete s.ownerPin; return s; })());
+function ambilLokasiGPSApotek(){
+  const status = document.getElementById('statusLokasiApotek');
+  if(!navigator.geolocation){ if(status) status.textContent='HP/browser ini tidak mendukung GPS.'; return; }
+  if(status) status.textContent='📡 Mengambil titik lokasi apotek...';
+  navigator.geolocation.getCurrentPosition(
+    pos=>{
+      pengaturanApotek.lat = pos.coords.latitude;
+      pengaturanApotek.lng = pos.coords.longitude;
+      if(status) status.textContent='✅ Titik lokasi apotek berhasil diambil. Jangan lupa tekan "Simpan Pengaturan Apotek" di bawah.';
+      tampilkanToast('Lokasi apotek terdeteksi, simpan pengaturan untuk mengaktifkan', true);
+    },
+    err=>{ if(status) status.textContent='⚠️ Gagal mengambil lokasi (izin ditolak/GPS mati).'; },
+    {enableHighAccuracy:true, timeout:10000}
+  );
+}
+function jarakKM(lat1, lng1, lat2, lng2){
+  // Rumus Haversine — jarak garis lurus antar 2 titik koordinat, dalam kilometer
+  const R = 6371;
+  const dLat = (lat2-lat1)*Math.PI/180, dLng = (lng2-lng1)*Math.PI/180;
+  const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+async function simpanPengaturanApotek(){
   const pinBaru = document.getElementById('apOwnerPin').value.trim();
   pengaturanApotek = {
     siaNomor: document.getElementById('apSiaNomor').value.trim(),
@@ -3247,22 +3653,34 @@ function simpanPengaturanApotek(){
     website: document.getElementById('apWebsite')?.value.trim()||'',
     telepon: document.getElementById('apTelepon')?.value.trim()||'',
     emailHR: document.getElementById('apEmailHR')?.value.trim()||'',
-    emailApotek: document.getElementById('apEmailApotek')?.value.trim()||''
+    emailApotek: document.getElementById('apEmailApotek')?.value.trim()||'',
+    radiusKurirKm: parseFloat(document.getElementById('apRadiusKurir')?.value)||10,
+    lat: pengaturanApotek.lat||null, lng: pengaturanApotek.lng||null
   };
   localStorage.setItem('bh_pengaturan_apotek', JSON.stringify(pengaturanApotek));
-  simpanPengaturanApotekCloud(pinBaru || null);
   renderLegalitasFooter();
   document.getElementById('apOwnerPin').value='';
-  tampilkanToast('Pengaturan apotek tersimpan'+(pinBaru?' (PIN baru aktif)':''), true);
+  if(!db){
+    tampilkanToast('Pengaturan tersimpan di HP ini saja (tidak ada koneksi cloud) — buka dengan internet aktif lalu simpan ulang supaya tersinkron ke semua perangkat', true);
+    return;
+  }
+  const berhasilCloud = await simpanPengaturanApotekCloud(pinBaru || null);
+  if(berhasilCloud){
+    tampilkanToast('Pengaturan apotek tersimpan & tersinkron ke semua perangkat'+(pinBaru?' (PIN baru aktif)':''), true);
+  } else {
+    tampilkanToast('⚠️ Tersimpan di HP ini saja — GAGAL sinkron ke cloud. Nomor WA/data lain mungkin belum berubah di perangkat lain. Coba simpan ulang.');
+  }
 }
 async function simpanPengaturanApotekCloud(pinBaru){
-  if(!db) return;
+  if(!db) return false;
   try{
-    const payload = {id:1, sia_nomor:pengaturanApotek.siaNomor, apa_nama:pengaturanApotek.apaNama, npwp:pengaturanApotek.npwp, beban_bulanan:pengaturanApotek.bebanBulanan, modal_awal:pengaturanApotek.modalAwal, alamat:pengaturanApotek.alamat, website:pengaturanApotek.website, telepon:pengaturanApotek.telepon, email_hr:pengaturanApotek.emailHR, email_apotek:pengaturanApotek.emailApotek};
+    const payload = {id:1, sia_nomor:pengaturanApotek.siaNomor, apa_nama:pengaturanApotek.apaNama, npwp:pengaturanApotek.npwp, beban_bulanan:pengaturanApotek.bebanBulanan, modal_awal:pengaturanApotek.modalAwal, alamat:pengaturanApotek.alamat, website:pengaturanApotek.website, telepon:pengaturanApotek.telepon, email_hr:pengaturanApotek.emailHR, email_apotek:pengaturanApotek.emailApotek, lat:pengaturanApotek.lat, lng:pengaturanApotek.lng, radius_kurir_km:pengaturanApotek.radiusKurirKm};
     if(pinBaru) payload.owner_pin = pinBaru; // hanya dikirim SEKALI saat diganti, tidak pernah dibaca balik ke browser
-    await db.from('pengaturan_apotek').upsert(payload);
+    const {error} = await db.from('pengaturan_apotek').upsert(payload);
+    if(error) throw error;
+    return true;
   }
-  catch(e){ console.warn('Gagal sinkron pengaturan apotek', e); }
+  catch(e){ console.warn('Gagal sinkron pengaturan apotek', e); return false; }
 }
 async function verifikasiPinOwner(pinInput){
   if(!db || !pinInput) return false;
@@ -3590,7 +4008,27 @@ function siapkanPWA(){
   }catch(e){ console.warn('Gagal siapkan manifest PWA', e); }
   if('serviceWorker' in navigator){
     try{
-      const swCode = "self.addEventListener('install',e=>self.skipWaiting());self.addEventListener('activate',e=>self.clients.claim());self.addEventListener('fetch',e=>{});";
+      // Strategi "stale-while-revalidate": tampilkan dari cache dulu (cepat & bisa offline), sambil diam-diam update cache dari internet kalau ada.
+      // Ini yang membuat halaman ini BENAR-BENAR bisa dibuka tanpa internet setelah pernah dibuka online minimal sekali.
+      const swCode = `
+        const NAMA_CACHE = 'bh-cache-v1';
+        self.addEventListener('install', e => self.skipWaiting());
+        self.addEventListener('activate', e => self.clients.claim());
+        self.addEventListener('fetch', e => {
+          if(e.request.method !== 'GET') return;
+          e.respondWith(
+            caches.open(NAMA_CACHE).then(cache =>
+              cache.match(e.request).then(cached => {
+                const ambilDariJaringan = fetch(e.request).then(respons => {
+                  if(respons && respons.status===200){ cache.put(e.request, respons.clone()); }
+                  return respons;
+                }).catch(()=> cached);
+                return cached || ambilDariJaringan;
+              })
+            )
+          );
+        });
+      `;
       const swUrl = URL.createObjectURL(new Blob([swCode], {type:'application/javascript'}));
       navigator.serviceWorker.register(swUrl).catch(e=>console.warn('Gagal daftar service worker', e));
     }catch(e){ console.warn('Gagal siapkan service worker', e); }
@@ -3598,7 +4036,14 @@ function siapkanPWA(){
 }
 
 function bukaModalLogin(){
-  if(!db){ tampilkanToast('Login membutuhkan koneksi internet untuk verifikasi keamanan'); return; }
+  const tombolOffline = document.getElementById('btnMasukOffline');
+  if(!db || !navigator.onLine){
+    const adaCache = !!localStorage.getItem('bh_profil_cache');
+    if(tombolOffline) tombolOffline.hidden = !adaCache;
+    if(!adaCache){ tampilkanToast('Tidak ada internet & belum ada sesi tersimpan di HP ini. Login online minimal 1x dulu selagi ada internet.'); return; }
+  } else {
+    if(tombolOffline) tombolOffline.hidden = true;
+  }
   document.getElementById('modalLogin').classList.add('terbuka');
   document.getElementById('loginError').hidden=true;
 }
@@ -3675,6 +4120,8 @@ async function masukDenganSesi(user){
     if(!infoPeran){ tampilkanToast('Peran akun tidak dikenali sistem.'); return false; }
     peranAktif = infoPeran;
     namaLoginAktif = profil.nama || user.email;
+    // Simpan cache profil (peran & nama saja, TANPA data sensitif) supaya bisa dipakai untuk "Masuk Mode Offline" nanti
+    localStorage.setItem('bh_profil_cache', JSON.stringify({peranId: infoPeran.id, nama: namaLoginAktif, waktuCache: new Date().toISOString()}));
     document.getElementById('dashboard').hidden=false;
     document.getElementById('absensi').hidden=false;
     document.getElementById('jadwal').hidden=false;
@@ -3685,12 +4132,33 @@ async function masukDenganSesi(user){
     renderDashboardIsi(infoPeran.id==='owner' ? 'ringkasan' : infoPeran.id);
     document.getElementById('dashboard').scrollIntoView({behavior:'smooth'});
     tampilkanToast('Berhasil masuk sebagai '+infoPeran.nama, true);
+    mintaIzinNotifikasi();
+    if(infoPeran.id==='kasir' || infoPeran.id==='owner') cobaPulihkanDraftPosCloud();
     return true;
   }catch(e){
     console.warn('Gagal memuat profil karyawan', e);
     tampilkanToast('Terjadi kendala saat memuat profil akun.');
     return false;
   }
+}
+function masukModeOffline(){
+  const cache = JSON.parse(localStorage.getItem('bh_profil_cache')||'null');
+  if(!cache){ tampilkanToast('Belum ada sesi tersimpan di HP ini. Login online minimal 1x dulu.'); return; }
+  const infoPeran = peranData.find(p=>p.id===cache.peranId);
+  if(!infoPeran){ tampilkanToast('Data sesi tersimpan tidak dikenali.'); return; }
+  peranAktif = infoPeran;
+  namaLoginAktif = cache.nama;
+  document.getElementById('dashboard').hidden=false;
+  document.getElementById('absensi').hidden=false;
+  document.getElementById('jadwal').hidden=false;
+  document.getElementById('dasborInisial').textContent = namaLoginAktif[0].toUpperCase();
+  document.getElementById('dasborNamaPeran').textContent = infoPeran.nama + ' — ' + namaLoginAktif;
+  document.getElementById('dasborSubPeran').textContent = (infoPeran.id==='owner' ? 'Akses penuh — semua divisi' : 'Akses terbatas sesuai divisi') + ' (⚠️ Mode Offline)';
+  renderTabDivisiOwner();
+  renderDashboardIsi(infoPeran.id==='owner' ? 'ringkasan' : infoPeran.id);
+  tutupModalLogin();
+  document.getElementById('dashboard').scrollIntoView({behavior:'smooth'});
+  tampilkanToast('Masuk mode offline sebagai '+infoPeran.nama+' — data akan tersinkron otomatis begitu internet kembali', true);
 }
 
 async function logout(){
@@ -3900,6 +4368,8 @@ function tplRingkasanOwner(){
     <p style="font-size:11.5px; color:var(--teks-redup); margin-top:-4px; margin-bottom:12px;">Gabungan semua insight AI dari seluruh divisi — baca ini dulu sebelum buka tab lain</p>
     ${ringkasanHarianAI()}
   </div>
+  ${panelPesananOnlineHTML()}
+  ${panelReminderObatRutinHTML()}
   <div class="grid-statistik">
     <div class="kartu-stat"><span class="label">Omzet Hari Ini</span><strong>${formatRp(totalTransaksi)}</strong><span class="naik">${riwayatTransaksi.length} transaksi tercatat</span></div>
     <div class="kartu-stat"><span class="label">Transaksi</span><strong>${riwayatTransaksi.length}</strong><span class="naik">Hari ini</span></div>
@@ -4059,7 +4529,13 @@ function setKasirSubTab(tab){
   document.getElementById('btnSubKasir').className = 'btn btn-kecil '+(tab==='kasir'?'btn-utama':'btn-garis');
   document.getElementById('btnSubRiwayat').className = 'btn btn-kecil '+(tab==='riwayat'?'btn-utama':'btn-garis');
   document.getElementById('kasirSubKonten').innerHTML = tab==='kasir' ? tplKasirUtama() : tplKasirRiwayat();
-  if(tab==='kasir'){ renderPosStruk(); }
+  if(tab==='kasir'){
+    renderPosStruk();
+    if(adaDraftPosDipulihkan){
+      adaDraftPosDipulihkan = false;
+      tampilkanToast('🔄 Transaksi yang belum selesai berhasil dipulihkan (mungkin sempat mati listrik/internet) — lanjutkan atau tekan "🗑️ Kosongkan Antrian Ini" kalau mau mulai ulang', true);
+    }
+  }
 }
 
 function tplKasirUtama(){
@@ -4211,21 +4687,64 @@ function tplKasirUtama(){
         </div>
       </details>
       <button class="btn btn-utama btn-blok" style="margin-top:14px;" onclick="posSelesai()">✅ Selesaikan Transaksi</button>
+      <button class="btn btn-garis btn-blok" style="margin-top:8px;" onclick="posKosongkanAntrianIni()">🗑️ Kosongkan Antrian Ini</button>
     </div>
   </div>`;
 }
 
-function tplKasirRiwayat(){
+/* ===================== ALARM PESANAN BARU (bunyi + notifikasi + badge tab) ===================== */
+let jumlahPesananBelumDilihat = 0;
+const JUDUL_ASLI_TAB = document.title;
+function mintaIzinNotifikasi(){
+  if('Notification' in window && Notification.permission==='default'){
+    Notification.requestPermission();
+  }
+}
+function bunyikanAlarmPesananBaru(){
+  try{
+    const ctx = new (window.AudioContext||window.webkitAudioContext)();
+    [880, 1046].forEach((freq, i)=>{
+      const osc = ctx.createOscillator(), gain = ctx.createGain();
+      osc.type='sine'; osc.frequency.value=freq;
+      osc.connect(gain); gain.connect(ctx.destination);
+      const mulai = ctx.currentTime + i*0.18;
+      gain.gain.setValueAtTime(0.001, mulai);
+      gain.gain.exponentialRampToValueAtTime(0.25, mulai+0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, mulai+0.16);
+      osc.start(mulai); osc.stop(mulai+0.18);
+    });
+  }catch(e){ /* browser tidak mendukung Web Audio, lewati tanpa error */ }
+}
+function perbaruiJudulTabPesanan(){
+  document.title = jumlahPesananBelumDilihat>0 ? `(${jumlahPesananBelumDilihat}) ${JUDUL_ASLI_TAB}` : JUDUL_ASLI_TAB;
+}
+function notifikasiPesananBaru(pesan){
+  bunyikanAlarmPesananBaru();
+  jumlahPesananBelumDilihat++;
+  perbaruiJudulTabPesanan();
+  if('Notification' in window && Notification.permission==='granted'){
+    try{ new Notification('Apotek Binhafas', {body: pesan, icon:''}); }catch(e){}
+  }
+}
+function panelPesananOnlineHTML(){
+  // Panel ini sedang ditampilkan/dilihat staf — anggap notifikasi tertangani, reset badge
+  jumlahPesananBelumDilihat = 0;
+  perbaruiJudulTabPesanan();
+  const bolehKonfirmasi = peranAktif && ['owner','kasir','gudang'].includes(peranAktif.id);
   return `
-  ${checklistHarianHTML('kasir')}
   <div class="panel-putih">
     <h4>🌐 Pesanan Online — Menunggu Konfirmasi</h4>
-    <p style="font-size:12px; color:var(--teks-redup); margin-top:-6px; margin-bottom:12px;">Cek dulu pembayaran sudah masuk sebelum tap "Konfirmasi" — stok baru berkurang setelah dikonfirmasi</p>
+    <p style="font-size:12px; color:var(--teks-redup); margin-top:-6px; margin-bottom:12px;">${bolehKonfirmasi ? 'Cek dulu pembayaran sudah masuk sebelum tap "Konfirmasi" — stok baru berkurang setelah dikonfirmasi. Siapa pun yang senggang boleh langsung tangani, tidak perlu menunggu kasir.' : 'Anda bisa memantau daftar pesanan di sini. Konfirmasi/pembatalan hanya bisa dilakukan oleh Owner, Kasir, atau Admin Gudang & Sales.'}</p>
     <div class="tabel-scroll"><table class="tabel-simple">
       <thead><tr><th>Waktu</th><th>Pemesan</th><th>Barang</th><th>Total</th><th>Status</th><th>Aksi</th></tr></thead>
       <tbody id="tabelPesananOnline">${tabelPesananOnlineHTML()}</tbody>
     </table></div>
-  </div>
+  </div>`;
+}
+function tplKasirRiwayat(){
+  return `
+  ${checklistHarianHTML('kasir')}
+  ${panelPesananOnlineHTML()}
   <div class="panel-putih">
     <h4>Riwayat Transaksi Hari Ini</h4>
     <div class="tabel-scroll"><table class="tabel-simple">
@@ -4324,12 +4843,61 @@ function renderPosProdukList(kataKunci){
   document.getElementById('posProdukList').innerHTML = daftarPosItemHTML(hasil);
 }
 /* ===================== MULTI-ANTRIAN KASIR (layani beberapa pelanggan sekaligus) ===================== */
-let posSlots = [
+function muatDraftPosTersimpan(){
+  try{
+    const draft = JSON.parse(localStorage.getItem('bh_pos_draft')||'null');
+    if(draft && Array.isArray(draft.slots) && draft.slots.some(s=>s.cart && s.cart.length>0)) return draft;
+  }catch(e){ console.warn('Gagal memuat draft transaksi kasir tersimpan', e); }
+  return null;
+}
+const draftPosAwal = muatDraftPosTersimpan();
+let posSlots = draftPosAwal ? draftPosAwal.slots : [
   {cart:[], jenisPelanggan:'umum', metodeBayar:'tunai'},
   {cart:[], jenisPelanggan:'umum', metodeBayar:'tunai'},
   {cart:[], jenisPelanggan:'umum', metodeBayar:'tunai'}
 ];
-let posSlotAktif = 0;
+let posSlotAktif = draftPosAwal ? (draftPosAwal.aktif||0) : 0;
+let adaDraftPosDipulihkan = !!draftPosAwal;
+let waktuDebounceDraftCloud = null;
+function simpanDraftPosSementara(){
+  try{ localStorage.setItem('bh_pos_draft', JSON.stringify({slots: posSlots, aktif: posSlotAktif})); }
+  catch(e){ /* penyimpanan penuh/gagal, tidak fatal — transaksi tetap bisa lanjut di memori */ }
+  // Sinkron ke cloud juga (ditunda sedikit/debounce supaya tidak spam server tiap kali qty diubah), agar bisa dilanjutkan dari HP/tablet lain kalau perangkat ini rusak total
+  if(waktuDebounceDraftCloud) clearTimeout(waktuDebounceDraftCloud);
+  waktuDebounceDraftCloud = setTimeout(simpanDraftPosCloud, 1200);
+}
+async function simpanDraftPosCloud(){
+  if(!db || !namaLoginAktif) return;
+  try{
+    const adaIsi = posSlots.some(s=>s.cart && s.cart.length>0);
+    if(adaIsi){
+      await db.from('pos_draft').upsert({kasir: namaLoginAktif, slots: JSON.stringify(posSlots), aktif: posSlotAktif, updated_at: new Date().toISOString()}, {onConflict:'kasir'});
+    } else {
+      await db.from('pos_draft').delete().eq('kasir', namaLoginAktif); // semua antrian kosong, bersihkan draft cloud
+    }
+  }catch(e){ console.warn('Gagal sinkron draft transaksi ke cloud, tetap tersimpan lokal', e); }
+}
+async function cobaPulihkanDraftPosCloud(){
+  if(!db || !namaLoginAktif) return;
+  try{
+    const {data} = await db.from('pos_draft').select('*').eq('kasir', namaLoginAktif).maybeSingle();
+    if(!data || !data.slots) return;
+    const slotsCloud = typeof data.slots==='string' ? JSON.parse(data.slots) : data.slots;
+    if(!Array.isArray(slotsCloud) || !slotsCloud.some(s=>s.cart && s.cart.length>0)) return;
+    const adaDraftLokal = posSlots.some(s=>s.cart && s.cart.length>0);
+    if(adaDraftLokal) return; // perangkat ini sudah punya draft sendiri (dipulihkan dari localStorage) — jangan ditimpa, hindari bentrok
+    posSlots = slotsCloud;
+    posSlotAktif = data.aktif || 0;
+    posCart = posSlots[posSlotAktif] ? posSlots[posSlotAktif].cart : [];
+    posJenisPelanggan = posSlots[posSlotAktif] ? posSlots[posSlotAktif].jenisPelanggan : 'umum';
+    posMetodeBayar = posSlots[posSlotAktif] ? posSlots[posSlotAktif].metodeBayar : 'tunai';
+    adaDraftPosDipulihkan = true;
+    simpanDraftPosSementara();
+    const kasirTab = document.getElementById('kasirSubKonten');
+    if(kasirTab && peranAktif && peranAktif.id==='kasir'){ setKasirSubTab('kasir'); }
+    tampilkanToast('🔄 Transaksi belum selesai dari perangkat lain berhasil dipulihkan ke sini', true);
+  }catch(e){ console.warn('Gagal memulihkan draft transaksi dari cloud', e); }
+}
 function tabAntrianHTML(){
   return posSlots.map((s,i)=>{
     const jumlah = s.cart.reduce((a,it)=>a+it.qty,0);
@@ -4351,11 +4919,12 @@ function pindahSlotPos(index){
   setJenisPelangganPos(posJenisPelanggan);
   setMetodeBayarPos(posMetodeBayar);
   renderPosStruk();
+  simpanDraftPosSementara();
   if(posCart.length>0) tampilkanToast('Pindah ke Antrian '+(index+1)+' — '+posCart.length+' item tersimpan', true);
 }
 
-let posCart=[];
-let posJenisPelanggan = 'umum';
+let posCart = (posSlots[posSlotAktif] && posSlots[posSlotAktif].cart) ? posSlots[posSlotAktif].cart : [];
+let posJenisPelanggan = (posSlots[posSlotAktif] && posSlots[posSlotAktif].jenisPelanggan) || 'umum';
 function setJenisPelangganPos(jenis){
   posJenisPelanggan = jenis;
   document.getElementById('btnJenisUmum').classList.toggle('aktif', jenis==='umum');
@@ -4944,6 +5513,13 @@ function posBatalItem(kunci){
   renderPosStruk();
   tampilkanToast('Item dibatalkan dari struk');
 }
+function posKosongkanAntrianIni(){
+  if(posCart.length===0){ tampilkanToast('Antrian ini sudah kosong'); return; }
+  posCart = [];
+  posSlots[posSlotAktif].cart = posCart;
+  renderPosStruk();
+  tampilkanToast('Antrian ini dikosongkan', true);
+}
 function posUbahQty(kunci, delta){
   const item = posCart.find(x=>x.kunci===kunci);
   if(!item) return;
@@ -4977,6 +5553,7 @@ function renderPosStruk(){
     const totalEl=document.getElementById('posTotal'); if(totalEl) totalEl.textContent='Rp 0';
     posTotalSaatIni=0; hitungKembalian();
     posSlots[posSlotAktif].cart = posCart;
+    simpanDraftPosSementara();
     const tabKosongEl=document.querySelector('.baris-tab-antrian'); if(tabKosongEl) tabKosongEl.innerHTML=tabAntrianHTML();
     return;
   }
@@ -4996,6 +5573,7 @@ function renderPosStruk(){
     </div>`).join('');
   hitungTotalPos();
   posSlots[posSlotAktif].cart = posCart;
+  simpanDraftPosSementara();
   const tabEl=document.querySelector('.baris-tab-antrian'); if(tabEl) tabEl.innerHTML=tabAntrianHTML();
 }
 let posTotalSaatIni = 0;
@@ -5284,6 +5862,7 @@ function daftarProdusenOptionsHTML(){
 function tplGudangStok(){
   return `
   ${checklistHarianHTML('gudang')}
+  ${panelPesananOnlineHTML()}
   <div class="seksi-form-produk">
     <div class="judul-seksi-form"><span class="angka-seksi">🔍</span> Cari &amp; Pilih Produk <small>— perbaiki data produk yang sudah ada</small></div>
     <p class="ket-seksi-form">Kemasan, harga, foto, kedaluwarsa — semua bisa diedit di sini. Kalau nambah produk <strong>baru</strong> jenis Tablet/Kapsul, isi langsung lewat "Detail Kemasan" di form Tambah Produk, tidak perlu dobel isi di sini.</p>
@@ -5638,8 +6217,24 @@ function tplGudangStok(){
           </div>
         </div>
 
+        <div class="seksi-form-produk">
+          <div class="judul-seksi-form"><span class="angka-seksi">5</span> Foto &amp; Resep</div>
+          <div class="grid-form-pro">
+            <div class="form-grup" style="grid-column:1/-1;">
+              <label>Foto Produk (ambil dari galeri)</label>
+              <input type="file" id="fpGambar" accept="image/*" onchange="prosesGambarProduk(this)">
+              <div id="fpGambarPreviewArea" style="margin-top:8px;"></div>
+            </div>
+            <label class="form-checkbox" style="grid-column:1/-1;"><input type="checkbox" id="fpResep" onchange="document.getElementById('areaOwaProduk').style.display=this.checked?'block':'none'"> Produk ini termasuk Obat Keras (wajib resep dokter)</label>
+            <div id="areaOwaProduk" style="display:none; grid-column:1/-1; background:#fff8ec; border:1.5px solid #f2994a; border-radius:10px; padding:12px;">
+              <label class="form-checkbox" style="grid-column:1/-1;"><input type="checkbox" id="fpOwa"> Termasuk daftar OWA (Obat Wajib Apotek — Kepmenkes 347/1990, 924 &amp; 925/1993, 1176/1999)</label>
+              <p style="font-size:11px; color:#8a5a20; margin-top:6px; line-height:1.5;">⚠️ Hanya centang ini kalau nama obat ini memang ADA di daftar resmi OWA. Kalau ragu, biarkan tidak dicentang — biar tetap wajib resep dokter asli (lebih aman secara hukum). OWA yang dicentang keliru bisa berisiko ke izin apotek Anda.</p>
+            </div>
+          </div>
+        </div>
+
         <details class="detail-tambahan-produk">
-          <summary>+ Detail tambahan (barcode, foto, resep)</summary>
+          <summary>+ Detail tambahan (barcode, tanggal terima, ikon)</summary>
           <div class="grid-form-pro" style="margin-top:12px;">
             <div class="form-grup">
               <label>Kode Barcode</label>
@@ -5652,16 +6247,6 @@ function tplGudangStok(){
             <div class="form-grup">
               <label>Ikon Cadangan (emoji)</label>
               <input type="text" id="fpIkon" placeholder="Kosongkan = otomatis" maxlength="4">
-            </div>
-            <div class="form-grup" style="grid-column:1/-1;">
-              <label>Foto Produk (ambil dari galeri)</label>
-              <input type="file" id="fpGambar" accept="image/*" onchange="prosesGambarProduk(this)">
-              <div id="fpGambarPreviewArea" style="margin-top:8px;"></div>
-            </div>
-            <label class="form-checkbox" style="grid-column:1/-1;"><input type="checkbox" id="fpResep" onchange="document.getElementById('areaOwaProduk').style.display=this.checked?'block':'none'"> Produk ini termasuk Obat Keras (wajib resep dokter)</label>
-            <div id="areaOwaProduk" style="display:none; grid-column:1/-1; background:#fff8ec; border:1.5px solid #f2994a; border-radius:10px; padding:12px;">
-              <label class="form-checkbox" style="grid-column:1/-1;"><input type="checkbox" id="fpOwa"> Termasuk daftar OWA (Obat Wajib Apotek — Kepmenkes 347/1990, 924 &amp; 925/1993, 1176/1999)</label>
-              <p style="font-size:11px; color:#8a5a20; margin-top:6px; line-height:1.5;">⚠️ Hanya centang ini kalau nama obat ini memang ADA di daftar resmi OWA. Kalau ragu, biarkan tidak dicentang — biar tetap wajib resep dokter asli (lebih aman secara hukum). OWA yang dicentang keliru bisa berisiko ke izin apotek Anda.</p>
             </div>
           </div>
         </details>
@@ -5833,6 +6418,15 @@ function tplGudangPengaturan(){
         <input type="text" id="apAlamat" value="${pengaturanApotek.alamat||''}" placeholder="Contoh: Jl. Merdeka No.10, Aceh">
       </div>
       <div class="form-grup"><label>No. HP/Telepon Apotek</label><input type="text" id="apTelepon" value="${pengaturanApotek.telepon||''}" placeholder="08xxxxxxxxxx"></div>
+      <div class="form-grup" style="grid-column:1/-1;">
+        <label>Radius Jangkauan Kurir Sendiri (km) <small style="font-weight:500; color:var(--teks-redup);">(di luar radius ini, pelanggan diarahkan pakai Ekspedisi, bukan kurir motor sendiri)</small></label>
+        <input type="number" id="apRadiusKurir" value="${pengaturanApotek.radiusKurirKm||10}" placeholder="10">
+      </div>
+      <div class="form-grup" style="grid-column:1/-1;">
+        <label>Titik Lokasi Apotek (untuk hitung jarak ke pelanggan)</label>
+        <button type="button" class="btn btn-garis btn-kecil" onclick="ambilLokasiGPSApotek()" id="btnLokasiApotek">📍 Ambil Lokasi Apotek Sekarang (berdiri di apotek saat menekan ini)</button>
+        <p id="statusLokasiApotek" style="font-size:11px; color:var(--teks-redup); margin-top:4px;">${(pengaturanApotek.lat&&pengaturanApotek.lng)?'✅ Titik lokasi apotek sudah tersimpan.':'⚠️ Titik lokasi apotek belum diset — deteksi jarak pelanggan belum aktif.'}</p>
+      </div>
       <div class="form-grup"><label>Website Apotek (opsional)</label><input type="text" id="apWebsite" value="${pengaturanApotek.website||''}" placeholder="Contoh: apotekbinhafas.com"></div>
       <div class="form-grup"><label>Email Apotek (umum)</label><input type="text" id="apEmailApotek" value="${pengaturanApotek.emailApotek||''}" placeholder="info@apotekbinhafas.com"></div>
       <div class="form-grup"><label>Email HR</label><input type="text" id="apEmailHR" value="${pengaturanApotek.emailHR||''}" placeholder="hr@apotekbinhafas.com"></div>
@@ -7109,6 +7703,8 @@ function tplApoteker(){
   ];
   return `
   ${checklistHarianHTML('apoteker')}
+  ${panelPesananOnlineHTML()}
+  ${panelReminderObatRutinHTML()}
   <div class="grid-statistik">
     <div class="kartu-stat"><span class="label">Status</span><strong>Online</strong><span class="naik">Siap 24 jam</span></div>
     <div class="kartu-stat"><span class="label">Chat Masuk Hari Ini</span><strong>47</strong><span class="naik">▲ 6 baru</span></div>
@@ -7124,25 +7720,46 @@ function tplApoteker(){
 }
 
 function tplKurir(){
-  const daftar=[
-    {id:'#B1029', tujuan:'Jl. Mawar No. 4', status:'Diambil'},
-    {id:'#B1030', tujuan:'Jl. Melati No. 12', status:'Diantar'},
-    {id:'#B1031', tujuan:'Jl. Kenanga No. 8', status:'Menunggu'},
-  ];
   return `
   ${checklistHarianHTML('kurir')}
   <div class="panel-putih">
-    <h4>Daftar Pengantaran</h4>
+    <h4>🛵 Daftar Pengantaran</h4>
+    <p style="font-size:12px; color:var(--teks-redup); margin-top:-8px; margin-bottom:12px;">Pesanan yang sudah dikonfirmasi kasir &amp; perlu diantar. Tekan "Buka Rute" untuk diarahkan Google Maps langsung ke alamat/titik GPS pelanggan.</p>
     <div class="tabel-scroll"><table class="tabel-simple">
-      <thead><tr><th>ID</th><th>Alamat Tujuan</th><th>Status</th><th>Aksi</th></tr></thead>
-      <tbody id="tabelKurir">${daftar.map(renderBarisKurir).join('')}</tbody>
+      <thead><tr><th>Pelanggan</th><th>Alamat</th><th>Status</th><th>Aksi</th></tr></thead>
+      <tbody id="tabelKurir">${tabelKurirHTML()}</tbody>
+    </table></div>
+  </div>
+  <div class="panel-putih">
+    <h4>📜 Riwayat Pengantaran Selesai</h4>
+    <div class="tabel-scroll"><table class="tabel-simple">
+      <thead><tr><th>Waktu</th><th>Pelanggan</th><th>Alamat</th></tr></thead>
+      <tbody>${riwayatPengantaranSelesaiHTML()}</tbody>
     </table></div>
   </div>`;
 }
-function renderBarisKurir(d){
-  const kelas = d.status==='Diantar'?'status-hijau': d.status==='Diambil'?'status-oranye':'status-abu';
-  return `<tr><td>${d.id}</td><td>${d.tujuan}</td><td><span class="status-pil ${kelas}">${d.status}</span></td>
-    <td><button class="btn btn-garis btn-kecil" onclick="tampilkanToast('Status ${d.id} diperbarui', true)">Update Status</button></td></tr>`;
+function tabelKurirHTML(){
+  const daftar = pesananOnline.filter(p=>p.metode==='antar' && (p.status==='dikonfirmasi'||p.status==='menunggu')).slice().reverse();
+  if(daftar.length===0) return '<tr><td colspan="4" style="color:var(--teks-redup);">Belum ada pesanan yang perlu diantar saat ini.</td></tr>';
+  return daftar.map(p=>{
+    const kelas = p.status==='dikonfirmasi' ? 'status-hijau' : 'status-berlebih';
+    const label = p.status==='dikonfirmasi' ? '✅ Siap Diantar' : '⏳ Menunggu Konfirmasi Kasir';
+    const punyaGPS = p.lat && p.lng;
+    const badgeCOD = p.codBelumBayar ? `<br><span class="status-pil status-berlebih" style="margin-top:3px; display:inline-block;">💵 Tagih ${formatRp(p.total)} (COD)</span>` : (p.metode==='antar' ? `<br><span style="font-size:10.5px; color:var(--hijau-tua);">💳 Sudah dibayar</span>` : '');
+    return `<tr>
+      <td>${escapeHTML(p.nama)}${p.wa?'<br><span style="font-size:11px; color:var(--teks-redup);">'+escapeHTML(p.wa)+'</span>':''}${badgeCOD}</td>
+      <td style="white-space:normal; max-width:160px;">${escapeHTML(p.alamat||'-')}${punyaGPS?'<br><span style="font-size:10.5px; color:var(--hijau-tua);">📍 Titik GPS tersedia</span>':''}</td>
+      <td><span class="status-pil ${kelas}">${label}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="btn btn-utama btn-kecil" onclick="bukaRuteKurir(${p.lat||'null'}, ${p.lng||'null'}, '${(p.alamat||'').replace(/'/g,"\\'")}')">🗺️ Buka Rute</button>
+        ${p.status==='dikonfirmasi' ? `<button class="btn btn-garis btn-kecil" onclick="tandaiPesananSelesaiDiantar('${p.id}')">${p.codBelumBayar?'💵 Terima Bayar':'✅ Selesai'}</button>` : ''}
+      </td></tr>`;
+  }).join('');
+}
+function riwayatPengantaranSelesaiHTML(){
+  const daftar = pesananOnline.filter(p=>p.metode==='antar' && p.status==='selesai').slice().reverse().slice(0,15);
+  if(daftar.length===0) return '<tr><td colspan="3" style="color:var(--teks-redup);">Belum ada riwayat pengantaran selesai.</td></tr>';
+  return daftar.map(p=>`<tr><td>${new Date(p.waktu).toLocaleString('id-ID')}</td><td>${escapeHTML(p.nama)}</td><td style="white-space:normal; max-width:160px;">${escapeHTML(p.alamat||'-')}</td></tr>`).join('');
 }
 
 function tplHR(){
@@ -7173,6 +7790,7 @@ function setHRSubTab(tab){
 function tplHRRingkasan(){
   return `
   ${checklistHarianHTML('hr')}
+  ${panelPesananOnlineHTML()}
   <div class="grid-statistik">
     <div class="kartu-stat"><span class="label">Total Karyawan</span><strong id="statTotalKaryawan">6</strong></div>
     <div class="kartu-stat"><span class="label">Hadir Hari Ini</span><strong>${riwayatAbsensi.length}</strong></div>
@@ -7786,6 +8404,7 @@ function tplPajakRingkasan(){
 
   return `
   ${checklistHarianHTML('pajak')}
+  ${panelPesananOnlineHTML()}
   <div class="grid-statistik">
     <div class="kartu-stat"><span class="label">Omzet Bulan Ini</span><strong>${formatRp(omzetBulanan)}</strong></div>
     <div class="kartu-stat"><span class="label">Estimasi Modal (HPP)</span><strong>${formatRp(modalTerjual)}</strong></div>
@@ -8104,6 +8723,7 @@ function hapusDeadlinePajak(id){
 function tplMedsos(){
   return `
   ${checklistHarianHTML('medsos')}
+  ${panelPesananOnlineHTML()}
   <div class="panel-putih" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
     <div><h4 style="margin-bottom:2px;">Admin Medsos AI</h4><p style="font-size:12.5px; color:var(--teks-redup);">Bantu susun ide konten &amp; caption dari data toko asli — bukan live streaming/posting otomatis (butuh integrasi API resmi Meta/TikTok yang belum tersedia)</p></div>
     <span class="status-pil status-hijau">✅ Siap Pakai</span>
@@ -9889,6 +10509,7 @@ function init(){
   muatLowonganPublik();
   perbaruiJam(); setInterval(perbaruiJam, 30000);
   cekStatusOffline(); siapkanPWA();
+  setInterval(prosesAntreanSinkronisasi, 20000); // jaga-jaga kalau event 'online' browser tidak terpicu
   // Semua kolom angka: pilih semua teksnya saat disentuh, supaya tinggal ketik langsung menimpa (tidak perlu hapus "0" manual dulu)
   document.addEventListener('focusin', e=>{ if(e.target.tagName==='INPUT' && e.target.type==='number' && e.target.value==='0') e.target.value=''; });
   if(db){ cekModePasswordRecovery(); muatDataCloud().then(()=>{ pasangRealtimeSync(); renderTerlaris(); renderInfoBayarKeranjang(); renderLegalitasFooter(); cekSesiLoginTersimpan(); }); } else { setStatusCloud('⚠️ Mode Lokal', 'status-oranye'); }
