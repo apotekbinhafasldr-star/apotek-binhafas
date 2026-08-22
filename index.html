@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>UMKMpro AI — Apotek Binhafas</title>
+<title>Apotek Binhafas</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
@@ -369,8 +369,8 @@
   <div class="auth-card">
     <div style="position:absolute; top:10px; right:14px; font-size:10px; color:#999; font-family:monospace;">apotek-binhafas-pribadi-v1</div>
     <div class="auth-brand">
-      <div class="brand-mark">U</div>
-      <div class="auth-brand-name">UMKMpro AI</div>
+      <div class="brand-mark">B</div>
+      <div class="auth-brand-name">Apotek Binhafas</div>
     </div>
     <div id="auth-title" class="auth-title">Masuk ke akun kamu</div>
     <div id="auth-sub" class="auth-sub">Apotek Binhafas — kelola usaha dari sini</div>
@@ -422,7 +422,7 @@
         </div>
       </div>
       <input type="file" id="logo-upload-input" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
-      <div><div class="brand-name">UMKMpro AI</div><div class="brand-sub" id="sidebar-tenant">Apotek</div></div>
+      <div><div class="brand-name">Apotek Binhafas</div><div class="brand-sub" id="sidebar-tenant">Apotek</div></div>
     </div>
 
     <div class="nav-dropdown" id="nav-dropdown" onclick="if(event.target===this) toggleNavMenu()">
@@ -1061,7 +1061,7 @@
               <label>Status Migrasi</label>
               <select id="migrasi-status-select" onchange="ubahStatusMigrasi(this.value)">
                 <option value="completed">Sudah Lengkap (tidak sedang migrasi)</option>
-                <option value="not_started">Belum Mulai — baru mau pindah ke UMKMpro AI</option>
+                <option value="not_started">Belum Mulai — data lama belum diinput</option>
                 <option value="migrating">Sedang Migrasi — input produk bertahap</option>
                 <option value="partially_active">Sebagian Besar Sudah Lengkap</option>
               </select>
@@ -1805,7 +1805,7 @@ Tidak menyerahkan obat keras tanpa resep/prosedur berlaku</textarea></div>
           <div class="loading-note">Memuat status langganan…</div>
         </div>
       </div>
-      <div class="panel" style="max-width:480px; margin-top:16px;">
+      <div class="panel" style="max-width:480px; margin-top:16px; display:none;">
         <div class="panel-head"><h3>🎁 Referral — Ajak Usaha Lain Pakai UMKMpro AI</h3></div>
         <div class="panel-body" id="referral-platform-box"><div class="loading-note">Memuat…</div></div>
       </div>
@@ -1828,7 +1828,7 @@ Tidak menyerahkan obat keras tanpa resep/prosedur berlaku</textarea></div>
 <div id="bantuan-panel" style="display:none; position:fixed; bottom:82px; left:20px; z-index:96; width:min(340px, calc(100vw - 40px)); height:min(480px, calc(100vh - 140px)); background:var(--surface); border-radius:18px; box-shadow:0 12px 40px rgba(0,0,0,.3); display:flex; flex-direction:column; overflow:hidden; border:1.5px solid var(--line);">
   <div style="background:var(--brand-deep); color:#fff; padding:14px 16px; display:flex; align-items:center; justify-content:space-between;">
     <div>
-      <div style="font-size:13px; font-weight:800;">💬 Asisten UMKMpro AI</div>
+      <div style="font-size:13px; font-weight:800;">💬 Asisten Apotek Binhafas</div>
       <div style="font-size:10.5px; opacity:0.8;">Tanya cara pakai fitur apa saja</div>
     </div>
     <span onclick="toggleBantuanChat()" style="cursor:pointer; font-size:20px; line-height:1;">×</span>
@@ -3325,7 +3325,7 @@ Baca & tanda tangan kontrak kerja</textarea>
     // Coba buka WA kalau developer sudah pasang nomor kontak
     const { data: config } = await sb.from('dev_support_config').select('whatsapp_number').eq('id', 1).maybeSingle();
     if (config?.whatsapp_number){
-      const teks = `🐞 Laporan Masalah UMKMpro AI\n\nUsaha: ${document.getElementById('sidebar-tenant')?.textContent || '-'}\nPelapor: ${currentProfile.nama} (${currentProfile.role})\nHalaman: ${halamanAktif}\n\nMasalah:\n${deskripsi}${screenshotUrl ? `\n\n📷 Screenshot: ${screenshotUrl}` : ''}`;
+      const teks = `🐞 Laporan Masalah Apotek Binhafas\n\nUsaha: ${document.getElementById('sidebar-tenant')?.textContent || '-'}\nPelapor: ${currentProfile.nama} (${currentProfile.role})\nHalaman: ${halamanAktif}\n\nMasalah:\n${deskripsi}${screenshotUrl ? `\n\n📷 Screenshot: ${screenshotUrl}` : ''}`;
       window.open(`https://wa.me/${config.whatsapp_number}?text=${encodeURIComponent(teks)}`, '_blank');
     }
   }
@@ -3355,7 +3355,7 @@ Baca & tanda tangan kontrak kerja</textarea>
 
     const { data: config } = await sb.from('dev_support_config').select('whatsapp_number').eq('id', 1).maybeSingle();
     if (config?.whatsapp_number){
-      const teks = `💡 Saran & Kritik UMKMpro AI\n\nUsaha: ${document.getElementById('sidebar-tenant')?.textContent || '-'} (${tenantData?.jenis_usaha || '-'})\nPengaju: ${currentProfile.nama}\n\nSaran:\n${deskripsi}`;
+      const teks = `💡 Saran & Kritik Apotek Binhafas\n\nUsaha: ${document.getElementById('sidebar-tenant')?.textContent || '-'} (${tenantData?.jenis_usaha || '-'})\nPengaju: ${currentProfile.nama}\n\nSaran:\n${deskripsi}`;
       window.open(`https://wa.me/${config.whatsapp_number}?text=${encodeURIComponent(teks)}`, '_blank');
     }
   }
@@ -9559,7 +9559,7 @@ Baca & tanda tangan kontrak kerja</textarea>
   }
 
   // ================= WIDGET BANTUAN AI (asisten cara pakai aplikasi) =================
-  const PANDUAN_APLIKASI = `Kamu adalah asisten bantuan untuk aplikasi kasir & manajemen usaha "UMKMpro AI" (khusus apotek). Jawab singkat, jelas, langkah demi langkah, dalam Bahasa Indonesia santai tapi sopan. Kalau pertanyaan di luar topik aplikasi ini, arahkan balik dengan ramah. Berikut panduan tiap menu di aplikasi:
+  const PANDUAN_APLIKASI = `Kamu adalah asisten bantuan untuk aplikasi kasir & manajemen usaha Apotek Binhafas. Jawab singkat, jelas, langkah demi langkah, dalam Bahasa Indonesia santai tapi sopan. Kalau pertanyaan di luar topik aplikasi ini, arahkan balik dengan ramah. Berikut panduan tiap menu di aplikasi:
 
 **Dasbor**: ringkasan omzet hari ini, jumlah transaksi, obat mendekati kedaluwarsa, stok menipis, dan utang/piutang segera jatuh tempo (ada tombol "Ingatkan via WA" buat piutang pelanggan). Ada tombol **"Absen Sekarang"** langsung di Dashboard (bisa dipakai semua role, bukan cuma yang punya akses menu Karyawan & Shift). Ada panel **"🤖 Saran Tugas Otomatis"** (khusus Owner) — sistem otomatis deteksi masalah (stok menipis, obat mendekati kedaluwarsa, utang/piutang segera jatuh tempo) dan sarankan tugas ke role yang tepat (Admin Gudang, Apoteker, Kasir), Owner tinggal tap "✓ Setujui & Kirim", tidak perlu ngetik manual. Ada juga panel "📋 Tugas Hari Ini Untukmu" — Owner bisa kirim instruksi/tugas manual ke semua karyawan, satu role tertentu, atau karyawan tertentu (tombol "+ Kasih Tugas"), tanpa perlu briefing tatap muka tiap pagi. Karyawan lihat tugasnya sendiri di panel ini dan tap "Tandai Selesai". Owner bisa pantau siapa saja yang sudah/belum menyelesaikan tugasnya langsung dari panel yang sama. Fitur HR tambahan: **Kuota Cuti Otomatis**, **Riwayat Peringatan/SP**, **Onboarding Checklist**, **Surat Keterangan Kerja** otomatis. Ada juga **Seleksi Karyawan**: Owner bikin **Bank Soal** pilihan ganda per posisi, lalu **Tambah Kandidat** — sistem otomatis buat link tes unik yang bisa dikerjakan kandidat tanpa perlu akun/login, hasil dan skornya otomatis dihitung di server (anti-contek), Owner tinggal lihat skor dan tap Terima/Tolak. Ada juga **fitur anti-nepotisme**: form Tambah Karyawan & Tambah Kandidat punya kolom deklarasi transparan "punya hubungan keluarga dengan Owner/karyawan lain" — kalau diisi, muncul tag "👪 Keluarga" di daftar karyawan/kandidat. **Gaji pokok otomatis dipotong sesuai persentase kehadiran** — pola kerja standar **6 hari kerja/1 hari libur per minggu** (pakai data jadwal shift kalau Owner sudah isi, kalau belum diasumsikan otomatis). **Cuti Tahunan** dikecualikan dari potongan, tapi **Sakit/Izin tetap dihitung sebagai ketidakhadiran yang memotong gaji** meskipun ada surat dokter (surat dokter cuma bukti resmi, bukan pembebas potongan) — saat ajukan sakit, karyawan bisa upload foto surat dokter/resep obat. **Alpa (tidak hadir tanpa keterangan sama sekali) terdeteksi otomatis oleh sistem tiap malam** dan langsung dicatat sebagai peringatan progresif: alpa ke-1 = Teguran Lisan, ke-2 = SP1, ke-3 = SP2, ke-4 dst = SP3 — tanpa Owner perlu input manual. **Slip gaji juga dihitung otomatis tiap tanggal 1**, muncul di Dashboard panel "🧾 Slip Gaji Otomatis Siap Dikirim", Owner tinggal tap "Kirim WA" per karyawan. **Potongan BPJS bersifat opsional** (toggle di menu HR → panel "🏥 Potongan BPJS") — wajar dimatikan untuk UMKM yang belum daftarkan karyawan ke BPJS; kalau dimatikan, slip gaji dan surat kontrak otomatis tidak menyebut BPJS sama sekali. Menu di sidebar sekarang bernama **"HR"** (Human Resource) — isinya sub-fitur Karyawan & Shift lengkap. Kalau ada komplain gaji baru yang belum dibalas, muncul **badge angka merah** di menu HR (tanpa perlu buka menunya dulu buat tahu). Karyawan yang kurang puas sama slip gajinya bisa tap **"💬 Komplain"** di riwayat gaji-nya (Profil Saya), Owner/HR lihat & balas di menu HR panel "💬 Komplain Gaji". Setiap karyawan bisa lihat & cetak/simpan **kontrak kerjanya sendiri kapan saja dalam bentuk digital** (panel "📄 Kontrak Kerja Saya" di Profil Saya, tap "Lihat & Cetak" lalu simpan sebagai PDF lewat menu Print HP) — jadi karyawan tetap pegang versi fisik yang ditandatangani, sekaligus punya salinan digital yang bisa diakses ulang kapan saja tanpa minta ke Owner.
 
@@ -10267,7 +10267,7 @@ Kalau user tanya sesuatu yang sangat spesifik ke datanya sendiri (misal "kenapa 
       <table>${baris}</table>
       <div style="margin-top:20px; font-size:11px; color:#666; line-height:1.6;">
         <b>Catatan penting:</b><br>
-        • Angka di atas dihitung otomatis dari data transaksi &amp; laporan keuangan asli di sistem UMKMpro AI.<br>
+        • Angka di atas dihitung otomatis dari data transaksi &amp; laporan keuangan asli.<br>
         • Perbandingan skema (kalau ada) berdasarkan Laba Bersih akuntansi, BELUM termasuk koreksi fiskal menurut UU PPh Pasal 6 &amp; 9.<br>
         • Ini panduan umum berdasarkan PP Nomor 20 Tahun 2026, BUKAN nasihat pajak resmi. Konsultasikan ke konsultan pajak/petugas pajak sebelum lapor, terutama untuk perpindahan skema.<br>
         • Dokumen ini untuk referensi pribadi — input manual angkanya ke form SPT di coretaxdjp.pajak.go.id, bukan file yang diunggah langsung.
