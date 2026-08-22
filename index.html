@@ -110,24 +110,24 @@
   #app-shell{ display:none; }
   #app-shell.show{ display:flex; flex-direction:column; min-height:100vh; }
   .sidebar{
-    background: linear-gradient(105deg, #14261C 0%, #20402F 42%, #C25C0C 115%);
+    background: linear-gradient(105deg, #0B1712 0%, #1FAE5C 42%, #F2760F 115%);
     color:#FFFFFF;
     padding: 14px 22px;
     display:flex;
     align-items:center;
     gap:14px;
     position:sticky; top:0; z-index:60;
-    box-shadow: 0 8px 28px rgba(18,35,24,0.35);
+    box-shadow: 0 8px 28px rgba(11,23,18,0.35);
   }
-  .brand{ display:flex; align-items:center; gap:10px; }
+  .brand{ display:flex; align-items:center; gap:10px; min-width:0; flex:1; overflow:hidden; }
   .logo-upload-wrap{ position:relative; cursor:pointer; flex-shrink:0; }
   .logo-upload-wrap .brand-mark{ background-size:cover; background-position:center; }
   .logo-upload-badge{
     position:absolute; bottom:-3px; right:-3px; width:18px; height:18px; border-radius:50%;
     background:#F2760F; border:2px solid #1A2E23; display:flex; align-items:center; justify-content:center;
   }
-  .brand-name{ font-size:14.5px; font-weight:700; line-height:1.25; }
-  .brand-sub{ font-size:9px; color:#EEF5F0; }
+  .brand-name{ font-size:13.5px; font-weight:700; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .brand-sub{ font-size:9px; color:#EEF5F0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 
   .hamburger-btn{
     width:38px; height:38px; border-radius:9px; background:rgba(255,255,255,0.14);
@@ -143,19 +143,19 @@
   .nav-dropdown.show{ display:block; }
   .nav-panel{
     position:absolute; top:66px; left:16px; right:16px; max-width:320px;
-    background:var(--surface); border-radius:20px; box-shadow:0 20px 50px rgba(0,0,0,0.28);
-    padding:10px; display:flex; flex-direction:column; gap:6px;
+    background:var(--brand-deep); border-radius:20px; box-shadow:0 20px 50px rgba(0,0,0,0.4);
+    padding:10px; display:flex; flex-direction:column; gap:4px;
     max-height:calc(100vh - 90px); overflow-y:auto; -webkit-overflow-scrolling:touch;
   }
   nav{ display:contents; }
   .nav-item{
     display:flex; align-items:center; gap:11px; padding:11px 12px; border-radius:12px;
-    font-size:13.5px; color:var(--ink); border:none; background:var(--brand-tint); text-align:left; width:100%;
+    font-size:13.5px; color:#EAF3ED; border:none; background:none; text-align:left; width:100%;
     transition:background .12s ease;
   }
-  .nav-item svg{ opacity:.75; flex-shrink:0; color:var(--brand); }
-  .nav-item.active{ background:var(--amber-tint); color:var(--amber); font-weight:700; }
-  .nav-item.active svg{ opacity:1; color:var(--amber); }
+  .nav-item svg{ opacity:.85; flex-shrink:0; color:#EAF3ED; }
+  .nav-item.active{ background:var(--amber); color:#fff; font-weight:700; }
+  .nav-item.active svg{ opacity:1; color:#fff; }
 
   .sidebar-foot{ margin-left:auto; padding-left:16px; border-left:1px solid rgba(255,255,255,0.25); display:flex; align-items:center; gap:10px; }
   .avatar{ width:32px; height:32px; border-radius:50%; background:rgba(255,255,255,0.2); display:flex; align-items:center; justify-content:center; font-size:12.5px; font-weight:700; flex-shrink:0; }
@@ -422,11 +422,18 @@
         </div>
       </div>
       <input type="file" id="logo-upload-input" accept="image/*" style="display:none;" onchange="handleLogoUpload(event)">
-      <div><div class="brand-name">Apotek Binhafas</div><div class="brand-sub" style="opacity:0.65;">Powered by Tanyopo Intelligence</div><div id="sidebar-tenant" style="display:none;">Apotek</div></div>
+      <div style="min-width:0; overflow:hidden;"><div class="brand-name">Apotek Binhafas</div><div class="brand-sub" style="opacity:0.65;">Powered by Tanyopo Intelligence</div><div id="sidebar-tenant" style="display:none;">Apotek</div></div>
     </div>
 
     <div class="nav-dropdown" id="nav-dropdown" onclick="if(event.target===this) toggleNavMenu()">
       <div class="nav-panel">
+        <div style="display:flex; align-items:center; gap:10px; padding:8px 10px 14px; border-bottom:1px solid rgba(255,255,255,0.12); margin-bottom:8px;">
+          <div class="brand-mark" style="width:34px; height:34px; font-size:14px; flex-shrink:0;" id="tenant-logo-nav"></div>
+          <div style="min-width:0; overflow:hidden;">
+            <div style="font-size:13px; font-weight:700; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Apotek Binhafas</div>
+            <div style="font-size:9px; color:#EAF3ED; opacity:0.65; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">Powered by Tanyopo Intelligence</div>
+          </div>
+        </div>
         <nav>
           <button class="nav-item active" data-page="dashboard" onclick="goPage('dashboard', this)">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg>
@@ -465,7 +472,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
             Langganan
           </button>
-          <div style="border-top:1px dashed var(--line); margin:8px 0;"></div>
+          <div style="border-top:1px dashed rgba(255,255,255,0.15); margin:8px 0;"></div>
           <button class="nav-item" style="color:var(--danger);" onclick="document.getElementById('nav-dropdown').classList.remove('show'); openLaporanMasalahModal();">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
             🐞 Laporkan Masalah
@@ -7156,12 +7163,15 @@ Baca & tanda tangan kontrak kerja</textarea>
 
   function applyTenantLogo(logoUrl){
     const el = document.getElementById('tenant-logo');
+    const elNav = document.getElementById('tenant-logo-nav');
     if (logoUrl){
       el.style.backgroundImage = `url(${logoUrl})`;
       el.textContent = '';
+      if (elNav){ elNav.style.backgroundImage = `url(${logoUrl})`; elNav.style.backgroundSize = 'cover'; elNav.style.backgroundPosition = 'center'; elNav.textContent = ''; }
     } else {
       el.style.backgroundImage = '';
       el.textContent = 'U';
+      if (elNav){ elNav.style.backgroundImage = ''; elNav.textContent = 'U'; }
     }
   }
 
