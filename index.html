@@ -3376,7 +3376,7 @@ Baca & tanda tangan kontrak kerja</textarea>
     isSignupMode = !isSignupMode;
     document.getElementById('field-nama').style.display = isSignupMode ? 'block' : 'none';
     document.getElementById('field-nama-usaha').style.display = isSignupMode ? 'block' : 'none';
-    document.getElementById('field-kode-referral').style.display = isSignupMode ? 'block' : 'none';
+    // Kode referral disembunyikan permanen di situs pribadi ini (bukan produk yang dijual)
     document.getElementById('auth-title').textContent = isSignupMode ? 'Daftar akun baru' : 'Masuk ke akun kamu';
     document.getElementById('auth-submit-btn').textContent = isSignupMode ? 'Daftar' : 'Masuk';
     document.getElementById('auth-switch').innerHTML = isSignupMode
